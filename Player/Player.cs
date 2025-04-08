@@ -175,7 +175,7 @@ public class Player : MonoBehaviour
         {
             if (!isAttacking && attackCooldown <= 0f)
             {
-                // �������� ��� ����� (��������, ������� ��� ��� �������)
+                //    (,  )
                 if (playerIndex >= 5 && playerIndex <= 20)
                 {
                     StartCoroutine(MeleeAttackRoutine());
@@ -184,7 +184,7 @@ public class Player : MonoBehaviour
                 {
                     StartCoroutine(RangedAttackRoutine());
                 }
-                attackCooldown = currentPlayerData.attackCouldown;
+                attackCooldown = currentPlayerData.attackCooldown;
             }
         }
     }

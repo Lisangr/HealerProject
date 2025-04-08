@@ -511,6 +511,14 @@ public class Enemy : MonoBehaviour
             Player player = hitCollider.GetComponent<Player>();
             if (player != null)
             {
+                // Поворачиваемся к игроку
+                Vector3 direction = (player.transform.position - transform.position).normalized;
+                direction.y = 0; // Игнорируем вертикальную составляющую
+                if (direction != Vector3.zero)
+                {
+                    transform.rotation = Quaternion.LookRotation(direction);
+                }
+                
                 player.TakeDamage(_enemyData.damage);
                 Debug.Log($"Враг {gameObject.name} нанес урон игроку: {_enemyData.damage}");
                 return; // Если нашли игрока, наносим урон только ему
@@ -520,6 +528,14 @@ public class Enemy : MonoBehaviour
             CompanionNPC companion = hitCollider.GetComponent<CompanionNPC>();
             if (companion != null)
             {
+                // Поворачиваемся к компаньону
+                Vector3 direction = (companion.transform.position - transform.position).normalized;
+                direction.y = 0; // Игнорируем вертикальную составляющую
+                if (direction != Vector3.zero)
+                {
+                    transform.rotation = Quaternion.LookRotation(direction);
+                }
+                
                 companion.TakeDamage(_enemyData.damage);
                 Debug.Log($"Враг {gameObject.name} нанес урон компаньону: {_enemyData.damage}");
                 return; // Если нашли компаньона, наносим урон только ему

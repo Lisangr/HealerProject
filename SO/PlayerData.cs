@@ -4,24 +4,24 @@ using UnityEngine;
 public class PlayerData
 {
     [Header("Hero Settings")]
-    public GameObject prefab;       // Префаб героя
-    public int health;              // Здоровье героя
-    public int defense;             // Защита игрока (итоговая)
-    public float moveSpeed;         // Скорость передвижения героя
+    public GameObject prefab;       // РџСЂРµС„Р°Р± РіРµСЂРѕСЏ
+    public int health;              // Р—РґРѕСЂРѕРІСЊРµ РіРµСЂРѕСЏ
+    public int defense;             // Р—Р°С‰РёС‚Р° РіРµСЂРѕСЏ (Р±СЂРѕРЅСЏ)
+    public float moveSpeed;         // РЎРєРѕСЂРѕСЃС‚СЊ РїРµСЂРµРґРІРёР¶РµРЅРёСЏ РіРµСЂРѕСЏ
 
     [Header("Hero Characters")]
-    public int power;               // сила
-    public int dexterity;           // ловкость
-    public int stamina;             // выносливость
-    public int defence;           // защита
-    public int intellect = 10;
+    public int power;               // РЎРёР»Р°
+    public int dexterity;           // Р›РѕРІРєРѕСЃС‚СЊ
+    public int stamina;             // Р’С‹РЅРѕСЃР»РёРІРѕСЃС‚СЊ
+    public int defence;             // Р—Р°С‰РёС‚Р°
+    public int intellect = 10;      // РРЅС‚РµР»Р»РµРєС‚ (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ 10)
 
     [Header("Regeneration Settings")]
-    public float regeneration = 0.02f; // Восстановление здоровья: 2% от максимума в секунду (базовое значение)
+    public float regeneration = 0.02f; // Р РµРіРµРЅРµСЂР°С†РёСЏ Р·РґРѕСЂРѕРІСЊСЏ: 2% РѕС‚ РјР°РєСЃРёРјР°Р»СЊРЅРѕРіРѕ Р·РґРѕСЂРѕРІСЊСЏ РІ СЃРµРєСѓРЅРґСѓ (РЅР°С‡Р°Р»СЊРЅР°СЏ РЅР°СЃС‚СЂРѕР№РєР°)
 
     [Header("Attack Settings")]
-    public int attack;              // Урон героя
-    public float attackCouldown;    // Скорость атаки героя
-    public float attackRange;       // Дальность атаки героя
-    public float detectionRange;    // Дальность обнаружения врага
+    public int attack;              // РђС‚Р°РєР° РіРµСЂРѕСЏ
+    public float attackCooldown;    // Р’СЂРµРјСЏ РїРµСЂРµР·Р°СЂСЏРґРєРё Р°С‚Р°РєРё
+    public float attackRange;       // Р”Р°Р»СЊРЅРѕСЃС‚СЊ Р°С‚Р°РєРё
+    public float detectionRange;    // Р”Р°Р»СЊРЅРѕСЃС‚СЊ РѕР±РЅР°СЂСѓР¶РµРЅРёСЏ РІСЂР°РіРѕРІ
 }
