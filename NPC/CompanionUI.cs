@@ -24,24 +24,15 @@ public class CompanionUI : MonoBehaviour, IPointerClickHandler
     private Color32 currentBottomColor;
     private Coroutine colorUpdateCoroutine;
     private bool isSelected = false;
-
     public void Initialize(CompanionNPC companionNPC)
     {
         companion = companionNPC;
         maxHealth = companionNPC.GetMaxHealth();
-        
-        // Устанавливаем имя
-        if (nameText != null)
-        {
-            nameText.text = companionNPC.GetNPCName();
-        }
 
-        // Инициализируем полоску здоровья
+        // Убедитесь, что UI обновляется при изменении здоровья
         if (healthBarFill != null)
         {
             healthBarFill.fillAmount = 1f;
-            
-            // Получаем или добавляем компонент градиента
             healthBarGradient = healthBarFill.GetComponent<UIGradient>();
             if (healthBarGradient == null)
                 healthBarGradient = healthBarFill.gameObject.AddComponent<UIGradient>();
@@ -51,25 +42,26 @@ public class CompanionUI : MonoBehaviour, IPointerClickHandler
             healthBarGradient.SetColors(currentTopColor, currentBottomColor);
         }
 
-        // Обновляем текст здоровья
-        UpdateHealthText(maxHealth);
-
         // Подписываемся на событие изменения здоровья
         companion.OnHealthChanged.AddListener(UpdateHealth);
+
+        // Обновляем текст здоровья
+        UpdateHealthText(maxHealth);
     }
 
     public void UpdateHealth(int currentHealth)
     {
         if (healthBarFill != null)
         {
-            // Обновляем заполнение полоски здоровья
+            // Обновляем полоску здоровья
             float healthPercent = (float)currentHealth / maxHealth;
             healthBarFill.fillAmount = healthPercent;
-            
-            // Обновляем цвета градиента
+
+            // Обновляем градиент
             UpdateGradientColors(healthPercent);
         }
 
+        // Обновляем текст здоровья
         UpdateHealthText(currentHealth);
     }
 

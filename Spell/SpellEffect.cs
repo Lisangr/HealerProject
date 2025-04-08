@@ -59,51 +59,7 @@ public class SpellEffect : MonoBehaviour
 
     private IEnumerator DeactivateAfterDelay()
     {
-        yield return new WaitForSeconds(duration);
-        
-        // Плавно уменьшаем эмиссию частиц
-        float fadeTime = 0.5f;
-        float elapsedTime = 0f;
-        
-        // Сохраняем начальные значения эмиссии
-        var initialEmissionRates = new float[particleSystems.Length];
-        for (int i = 0; i < particleSystems.Length; i++)
-        {
-            var emission = particleSystems[i].emission;
-            initialEmissionRates[i] = emission.rateOverTime.constant;
-        }
-        
-        while (elapsedTime < fadeTime)
-        {
-            elapsedTime += Time.deltaTime;
-            float t = elapsedTime / fadeTime;
-            
-            // Плавно уменьшаем эмиссию частиц
-            for (int i = 0; i < particleSystems.Length; i++)
-            {
-                var emission = particleSystems[i].emission;
-                emission.rateOverTime = initialEmissionRates[i] * (1f - t);
-            }
-            
-            yield return null;
-        }
-
-        // Ждем, пока все частицы исчезнут
-        bool anyParticlesAlive;
-        do
-        {
-            anyParticlesAlive = false;
-            foreach (var ps in particleSystems)
-            {
-                if (ps.particleCount > 0)
-                {
-                    anyParticlesAlive = true;
-                    break;
-                }
-            }
-            yield return null;
-        } while (anyParticlesAlive);
-
+        yield return new WaitForSeconds(duration);     
         Destroy(gameObject);
     }
 } 

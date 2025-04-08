@@ -137,13 +137,12 @@ public class HealthSystem : MonoBehaviour
             Die();
         }
     }
-
     public void Heal(int amount)
     {
         if (currentHealth <= 0) return;
 
         currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
-        OnHealthChanged?.Invoke(currentHealth);
+        OnHealthChanged?.Invoke(currentHealth);  // Обновление UI
     }
 
     private void Die()

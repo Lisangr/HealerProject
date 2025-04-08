@@ -98,7 +98,6 @@ public class Spell : MonoBehaviour
         // Запуск корутины перезарядки
         StartCoroutine(CooldownCoroutine());
     }
-
     protected virtual void ApplyEffect()
     {
         if (spellData.affectAllGroupMembers)
@@ -106,16 +105,31 @@ public class Spell : MonoBehaviour
             Player player = caster.GetComponent<Player>();
             if (player != null)
             {
+                // Heal the player
+                HealthSystem playerHealthSystem = player.GetComponent<HealthSystem>();
+                if (playerHealthSystem != null)
+                {
+                    ApplyHealthEffect(playerHealthSystem);
+                    CreateEffects(player.gameObject, true); // Main effect for player
+                }
+
+                // Heal all companions
                 List<CompanionNPC> companions = player.GetCompanions();
                 foreach (var companion in companions)
                 {
-                    ApplyEffectToTarget(companion.gameObject);
+                    HealthSystem companionHealth = companion.GetComponent<HealthSystem>();
+                    if (companionHealth != null)
+                    {
+                        ApplyHealthEffect(companionHealth);
+                        CreateEffects(companion.gameObject, false); // Additional effect for companions
+                    }
                 }
             }
         }
         else
         {
-            ApplyEffectToTarget(target);
+            // Apply the healing effect to the target
+            ApplyHealthEffect(target.GetComponent<HealthSystem>());
         }
     }
 

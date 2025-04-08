@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections;
 using UnityEngine.UI;
 using UnityEngine.Events;
 
@@ -310,7 +309,6 @@ public class CompanionNPC : MonoBehaviour
         // Здесь можно добавить анимацию смерти, эффекты и т.д.
         gameObject.SetActive(false);
     }
-
     public void JoinGroup()
     {
         if (!isInGroup)
@@ -318,22 +316,25 @@ public class CompanionNPC : MonoBehaviour
             isInGroup = true;
             if (joinPrompt != null)
                 joinPrompt.SetActive(false);
-                
+
             // Создаем UI элемент для компаньона
             if (companionUIPrefab != null && companionUIContainer != null)
             {
                 GameObject uiInstance = Instantiate(companionUIPrefab, companionUIContainer);
                 companionUI = uiInstance.GetComponent<CompanionUI>();
+
                 if (companionUI != null)
                 {
-                    companionUI.Initialize(this);
+                    companionUI.Initialize(this); // Инициализируем UI
+                                                  // Подписываемся на изменение здоровья для обновления UI
+                    OnHealthChanged.AddListener(companionUI.UpdateHealth);
                 }
             }
-                
+
             // Можно добавить визуальный эффект присоединения
             if (audioSource != null && _npcData.hitSound != null)
                 audioSource.PlayOneShot(_npcData.hitSound);
-                
+
             // Вызываем событие присоединения к группе
             OnJoinedGroup?.Invoke(this);
             Debug.Log($"{_npcData.npcName} присоединился к группе!");
