@@ -88,15 +88,23 @@ public class HealthSystem : MonoBehaviour
             case EntityType.Companion:
                 if (npcConfig != null)
                 {
-                    string npcName = gameObject.name.Replace("(Clone)", "").Trim();
-                    NPCData npcData = npcConfig.npcs.FirstOrDefault(n => n.npcName == npcName);
-                    if (npcData != null)
+                    CompanionNPC companion = GetComponent<CompanionNPC>();
+                    if (companion != null)
                     {
-                        maxHealth = npcData.maxHealth; // Используем maxHealth вместо health
+                        string npcID = companion.npcID;
+                        NPCData npcData = npcConfig.npcs.FirstOrDefault(n => n.npcID == npcID);
+                        if (npcData != null)
+                        {
+                            maxHealth = npcData.maxHealth;
+                        }
+                        else
+                        {
+                            Debug.LogError($"HealthSystem на {gameObject.name}: не найдены данные NPC с ID {npcID} в NPCConfig!");
+                        }
                     }
                     else
                     {
-                        Debug.LogError($"HealthSystem на {gameObject.name}: не найдены данные NPC в NPCConfig!");
+                        Debug.LogError($"HealthSystem на {gameObject.name}: не найден компонент CompanionNPC!");
                     }
                 }
                 else

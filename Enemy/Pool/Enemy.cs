@@ -503,13 +503,26 @@ public class Enemy : MonoBehaviour
     }
     public void ApplyDamage()
     {
-        if (playerTransform != null)
+        // Проверяем, есть ли кто-то в радиусе атаки
+        Collider[] hitColliders = Physics.OverlapSphere(transform.position, _enemyData.attackRange);
+        foreach (var hitCollider in hitColliders)
         {
-            // ,     TakeDamage(int damage)
-            Player player = playerTransform.GetComponent<Player>();
+            // Проверяем игрока
+            Player player = hitCollider.GetComponent<Player>();
             if (player != null)
             {
                 player.TakeDamage(_enemyData.damage);
+                Debug.Log($"Враг {gameObject.name} нанес урон игроку: {_enemyData.damage}");
+                return; // Если нашли игрока, наносим урон только ему
+            }
+
+            // Проверяем компаньона
+            CompanionNPC companion = hitCollider.GetComponent<CompanionNPC>();
+            if (companion != null)
+            {
+                companion.TakeDamage(_enemyData.damage);
+                Debug.Log($"Враг {gameObject.name} нанес урон компаньону: {_enemyData.damage}");
+                return; // Если нашли компаньона, наносим урон только ему
             }
         }
     }

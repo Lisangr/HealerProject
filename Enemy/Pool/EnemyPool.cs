@@ -50,6 +50,25 @@ public class EnemyPool : MonoBehaviour
 
     public Enemy GetEnemy(Enemy enemyPrefab)
     {
+        if (enemyPrefab == null)
+        {
+            Debug.LogError("Попытка получить врага из null префаба!");
+            return null;
+        }
+
+        // Если префаба нет в пуле, создаем для него новый пул
+        if (!enemyPools.ContainsKey(enemyPrefab))
+        {
+            Debug.Log($"Создаем новый пул для префаба {enemyPrefab.name}");
+            Queue<Enemy> newPool = new Queue<Enemy>();
+            for (int i = 0; i < initialPoolSize; i++)
+            {
+                Enemy enemy = InstantiateEnemy(enemyPrefab);
+                newPool.Enqueue(enemy);
+            }
+            enemyPools[enemyPrefab] = newPool;
+        }
+
         if (enemyPools.TryGetValue(enemyPrefab, out Queue<Enemy> pool))
         {
             if (pool.Count > 0)
@@ -60,11 +79,12 @@ public class EnemyPool : MonoBehaviour
             }
             else
             {
-                Debug.Log("Создание нового врага, так как пул пуст");
+                Debug.Log($"Создание нового врага {enemyPrefab.name}, так как пул пуст");
                 return InstantiateEnemy(enemyPrefab);
             }
         }
-        Debug.LogError($"Prefab {enemyPrefab.name} not in pool!");
+
+        Debug.LogError($"Не удалось создать или получить пул для префаба {enemyPrefab.name}!");
         return null;
     }
 
@@ -79,23 +99,56 @@ public class EnemyPool : MonoBehaviour
         Debug.Log($"Возврат врага {enemy.name} в пул");
         
         Enemy prefab = enemy.OriginalPrefab;
-        if (enemyPools.ContainsKey(prefab))
+        if (prefab == null)
         {
-            Queue<Enemy> pool = enemyPools[prefab];
-            if (pool.Contains(enemy))
-            {
-                Debug.LogWarning($"Враг {enemy.name} уже находится в пуле");
-                return;
-            }
-
-            enemy.gameObject.SetActive(false);
-            pool.Enqueue(enemy);
-            
-            Debug.Log($"Враг {enemy.name} успешно возвращен в пул. Текущий размер пула: {pool.Count}");
+            Debug.LogError($"У врага {enemy.name} не задан OriginalPrefab!");
+            return;
         }
-        else
+
+        // Если пула для этого префаба еще нет, создаем его
+        if (!enemyPools.ContainsKey(prefab))
         {
-            Destroy(enemy.gameObject);
+            Debug.Log($"Создаем новый пул для префаба {prefab.name}");
+            enemyPools[prefab] = new Queue<Enemy>();
+        }
+
+        Queue<Enemy> pool = enemyPools[prefab];
+        if (pool.Contains(enemy))
+        {
+            Debug.LogWarning($"Враг {enemy.name} уже находится в пуле");
+            return;
+        }
+
+        // Сбрасываем состояние врага перед возвратом в пул
+        ResetEnemyState(enemy);
+        
+        enemy.gameObject.SetActive(false);
+        pool.Enqueue(enemy);
+        
+        Debug.Log($"Враг {enemy.name} успешно возвращен в пул. Текущий размер пула: {pool.Count}");
+    }
+
+    private void ResetEnemyState(Enemy enemy)
+    {
+        if (enemy == null) return;
+
+        // Сбрасываем все необходимые параметры врага
+        enemy.transform.position = Vector3.zero;
+        enemy.transform.rotation = Quaternion.identity;
+        
+        // Сбрасываем здоровье
+        var healthSystem = enemy.GetComponent<HealthSystem>();
+        if (healthSystem != null)
+        {
+            healthSystem.SetCurrentHealth(healthSystem.GetMaxHealth());
+        }
+
+        // Сбрасываем другие компоненты, если необходимо
+        var rb = enemy.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
         }
     }
 

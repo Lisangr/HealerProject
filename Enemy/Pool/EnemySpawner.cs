@@ -5,43 +5,43 @@ using System.Collections.Generic;
 [System.Serializable]
 public class EnemySpawnSettings
 {
-    public Enemy enemyPrefab;         // Префаб врага, как он указан в пуле
-    public int maxEnemies = 1;        // Максимальное число активных врагов данного типа
-    public Transform[] spawnPoints;   // Точки, где может заспавниться враг
+    public Enemy enemyPrefab;         // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ
+    public int maxEnemies = 1;        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+    public Transform[] spawnPoints;   // пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 
-    [Tooltip("Минимальное время до спавна после убийства")]
+    [Tooltip("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ")]
     public float spawnDelayMin = 10f;
 
-    [Tooltip("Максимальное время до спавна (если значение больше минимального, выбирается случайное время)")]
+    [Tooltip("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ)")]
     public float spawnDelayMax = 10f;
 
-    [Tooltip("Минимальное время до первого спавна")]
+    [Tooltip("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ")]
     public float initialSpawnDelayMin = 1f;
 
-    [Tooltip("Максимальное время до первого спавна")]
+    [Tooltip("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ")]
     public float initialSpawnDelayMax = 2f;
 }
 
 public class EnemySpawner : MonoBehaviour
 {
     [SerializeField] private List<EnemySpawnSettings> enemySpawnSettings;
-    [SerializeField] private float globalCheckInterval = 1f; // Интервал проверки (например, 1 секунда)
+    [SerializeField] private float globalCheckInterval = 1f; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, 1 пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 
-    // Массивы для таймеров и текущих пороговых значений для каждого типа врага
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
     private float[] spawnTimers;
     private float[] currentSpawnDelays;
-    // Флаг, указывающий, что первый спавн уже произошёл для каждого типа
+    // пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
     private bool[] hasSpawnedOnce;
 
     private void Start()
     {
-        // Инициализируем массивы, размер которых равен количеству настроек
+        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
         int count = enemySpawnSettings.Count;
         spawnTimers = new float[count];
         currentSpawnDelays = new float[count];
         hasSpawnedOnce = new bool[count];
 
-        // Устанавливаем для каждого типа врага начальную задержку спавна
+        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
         for (int i = 0; i < count; i++)
         {
             currentSpawnDelays[i] = Random.Range(enemySpawnSettings[i].initialSpawnDelayMin, enemySpawnSettings[i].initialSpawnDelayMax);
@@ -71,11 +71,11 @@ public class EnemySpawner : MonoBehaviour
                         }
                         else
                         {
-                            Debug.LogWarning($"Не заданы точки спавна для врага {settings.enemyPrefab.name}");
+                            Debug.LogWarning($"пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ {settings.enemyPrefab.name}");
                         }
-                        // Сбрасываем таймер для этого типа
+                        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
                         spawnTimers[i] = 0f;
-                        // Если первый спавн уже произошёл – используем обычные задержки, иначе продолжаем использовать начальные
+                        // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                         if (!hasSpawnedOnce[i])
                         {
                             hasSpawnedOnce[i] = true;
@@ -89,7 +89,7 @@ public class EnemySpawner : MonoBehaviour
                 }
                 else
                 {
-                    // Если число активных врагов достигло максимума, сбрасываем таймер
+                    // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                     spawnTimers[i] = 0f;
                 }
             }
@@ -102,23 +102,43 @@ public class EnemySpawner : MonoBehaviour
         EnemyPool pool = FindObjectOfType<EnemyPool>();
         if (pool == null)
         {
-            Debug.LogError("EnemyPool не найден на сцене!");
+            Debug.LogError("EnemyPool РЅРµ РЅР°Р№РґРµРЅ РЅР° СЃС†РµРЅРµ!");
             return;
         }
 
         Enemy enemy = pool.GetEnemy(enemyPrefab);
         if (enemy == null)
         {
-            Debug.LogError("Не удалось получить врага из пула.");
+            Debug.LogError($"РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ РІСЂР°РіР° РёР· РїСѓР»Р° РґР»СЏ РїСЂРµС„Р°Р±Р° {enemyPrefab.name}");
             return;
         }
 
+        // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РїРѕР·РёС†РёСЋ Рё РїРѕРІРѕСЂРѕС‚
         enemy.transform.position = spawnPoint.position;
         enemy.transform.rotation = spawnPoint.rotation;
+        
+        // РђРєС‚РёРІРёСЂСѓРµРј РѕР±СЉРµРєС‚
         enemy.gameObject.SetActive(true);
+        
+        // РРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј РІСЂР°РіР°
+        var healthSystem = enemy.GetComponent<HealthSystem>();
+        if (healthSystem != null)
+        {
+            healthSystem.RefreshFromConfig();
+        }
+
+        // РЎР±СЂР°СЃС‹РІР°РµРј СЃРѕСЃС‚РѕСЏРЅРёРµ РІСЂР°РіР°
+        var rb = enemy.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        Debug.Log($"РЎРѕР·РґР°РЅ РІСЂР°Рі {enemy.name} РІ РїРѕР·РёС†РёРё {spawnPoint.position}");
     }
 
-    // Подсчитываем количество активных врагов данного типа (проверка по свойству OriginalPrefab)
+    //       (   OriginalPrefab)
     private int CountActiveEnemies(Enemy enemyPrefab)
     {
         int count = 0;

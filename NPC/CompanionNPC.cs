@@ -7,7 +7,7 @@ public class CompanionNPC : MonoBehaviour
 {
     [Header("Конфигурация")]
     [SerializeField] private NPCConfig npcConfig;
-    [SerializeField] private string npcID; // Уникальный идентификатор этого НПС
+    [SerializeField] public string npcID; // Делаем поле публичным
     private NPCData _npcData; // Кэшированные данные НПС
     
     [Header("Компоненты")]
@@ -46,6 +46,7 @@ public class CompanionNPC : MonoBehaviour
     [SerializeField] private float maxFollowDistance = 4f;
     [SerializeField] private float acceleration = 2f;
     [SerializeField] private float deceleration = 4f;
+    [SerializeField] private float rayLength = 10f; // Добавляем длину луча для проверки высоты
 
     private Vector3 currentVelocity;
     private float currentSpeed;
@@ -191,20 +192,22 @@ public class CompanionNPC : MonoBehaviour
     {
         if (player == null) return;
 
-        // Вычисляем целевую позицию
+        // Вычисляем целевую позицию позади игрока
         Vector3 targetPosition = player.transform.position - player.transform.forward * _npcData.followDistance;
         
-        // Проверяем и корректируем высоту
-        targetPosition = AdjustHeight(targetPosition);
+        // Сохраняем текущую позицию для расчетов
+        Vector3 currentPos = transform.position;
         
-        // Вычисляем направление движения
-        Vector3 direction = (targetPosition - transform.position).normalized;
+        // Вычисляем плоское направление движения (без учета Y)
+        Vector3 targetPosFlat = new Vector3(targetPosition.x, currentPos.y, targetPosition.z);
+        Vector3 direction = (targetPosFlat - currentPos).normalized;
+        
+        // Рассчитываем дистанцию до цели
+        float distanceToTarget = Vector3.Distance(currentPos, targetPosFlat);
         
         // Плавное изменение скорости
-        float distanceToTarget = Vector3.Distance(transform.position, targetPosition);
         targetSpeed = Mathf.Clamp(distanceToTarget, minFollowDistance, maxFollowDistance) / maxFollowDistance * _npcData.moveSpeed;
         
-        // Плавное ускорение и замедление
         if (distanceToTarget > 0.1f)
         {
             currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, acceleration * Time.deltaTime);
@@ -214,61 +217,58 @@ public class CompanionNPC : MonoBehaviour
             currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, deceleration * Time.deltaTime);
         }
         
-        // Плавное движение
+        // Вычисляем желаемую скорость движения
         Vector3 desiredVelocity = direction * currentSpeed;
         currentVelocity = Vector3.Lerp(currentVelocity, desiredVelocity, smoothMovementSpeed * Time.deltaTime);
         
-        // Применяем движение
-        transform.position += currentVelocity * Time.deltaTime;
+        // Применяем горизонтальное движение
+        Vector3 newPosition = new Vector3(
+            currentPos.x + currentVelocity.x * Time.deltaTime,
+            currentPos.y,
+            currentPos.z + currentVelocity.z * Time.deltaTime
+        );
         
-        // Плавный поворот
-        if (direction != Vector3.zero)
+        // Проверяем и корректируем высоту
+        float newY = currentPos.y;
+        Vector3 rayOrigin = new Vector3(newPosition.x, newPosition.y + 2f, newPosition.z);
+        RaycastHit hit;
+        if (Physics.Raycast(rayOrigin, Vector3.down, out hit, rayLength, groundLayer))
+        {
+            newY = Mathf.Lerp(currentPos.y, hit.point.y, heightSmoothFactor * Time.deltaTime);
+            lastValidPosition = new Vector3(newPosition.x, hit.point.y, newPosition.z);
+            isGrounded = true;
+        }
+        else
+        {
+            // Если не нашли землю, используем последнюю валидную позицию
+            newY = lastValidPosition.y;
+            isGrounded = false;
+        }
+        
+        // Применяем финальную позицию с учетом высоты
+        transform.position = new Vector3(newPosition.x, newY, newPosition.z);
+        
+        // Поворот в направлении движения
+        if (currentVelocity.sqrMagnitude > 0.001f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, smoothRotationSpeed * Time.deltaTime);
         }
 
-        // Анимация движения
+        // Обновляем анимацию
         if (animator != null)
         {
             animator.SetBool("IsMoving", currentSpeed > 0.1f);
         }
     }
 
-    private Vector3 AdjustHeight(Vector3 position)
-    {
-        // Проверяем землю под компаньоном
-        RaycastHit hit;
-        Vector3 rayStart = position + Vector3.up * groundCheckDistance;
-        
-        if (Physics.SphereCast(rayStart, groundCheckRadius, Vector3.down, out hit, groundCheckDistance * 2, groundLayer))
-        {
-            // Сохраняем последнюю валидную позицию
-            lastValidPosition = new Vector3(position.x, hit.point.y, position.z);
-            
-            // Плавно изменяем высоту
-            float newY = Mathf.Lerp(transform.position.y, hit.point.y, heightSmoothFactor * Time.deltaTime);
-            position.y = newY;
-            
-            isGrounded = true;
-        }
-        else
-        {
-            // Если не нашли землю, используем последнюю валидную позицию
-            position = lastValidPosition;
-            isGrounded = false;
-        }
-        
-        return position;
-    }
-
     private void OnDrawGizmosSelected()
     {
-        // Визуализация проверки земли
+        // Визуализация проверки земли для отладки
         Gizmos.color = Color.yellow;
+        Vector3 rayOrigin = transform.position + Vector3.up * 2f;
+        Gizmos.DrawLine(rayOrigin, rayOrigin + Vector3.down * rayLength);
         Gizmos.DrawWireSphere(transform.position + Vector3.up * groundCheckDistance, groundCheckRadius);
-        Gizmos.DrawLine(transform.position + Vector3.up * groundCheckDistance, 
-                       transform.position + Vector3.up * groundCheckDistance + Vector3.down * groundCheckDistance * 2);
     }
 
     public void TakeDamage(int damage)

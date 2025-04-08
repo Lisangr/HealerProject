@@ -117,6 +117,12 @@ public class Player : MonoBehaviour
         StartCoroutine(RegenerationCoroutine());
         StartCoroutine(DelayedRestore());
         StartCoroutine(SnapshotCoroutine());
+
+        // Подписываемся на событие смерти в HealthSystem
+        if (healthSystem != null)
+        {
+            healthSystem.OnDeath.AddListener(Die);
+        }
     }    
 
     void Update()
@@ -488,10 +494,11 @@ public class Player : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
+        if (currentPlayerData == null) return;
+
+        // Устанавливаем состояние боя
         isInCombat = true;
         combatTimer = combatCooldown;
-
-        if (currentPlayerData == null) return;
 
         // Расчет текущей защиты
         int currentDefense = PlayerPrefs.GetInt(DefenceKey, currentPlayerData.defense);
@@ -507,11 +514,7 @@ public class Player : MonoBehaviour
                 StopCoroutine(damageCoroutine);
             damageCoroutine = StartCoroutine(ShowDamageEffect());
         }
-
-        if (healthSystem.GetCurrentHealth() <= 0)
-            Die();
     }
-
 
     private IEnumerator ShowDamageEffect()
     {
@@ -575,7 +578,7 @@ public class Player : MonoBehaviour
 
         while (true)
         {
-            if (!isInCombat)
+            if (!isInCombat && healthSystem.GetCurrentHealth() < healthSystem.GetMaxHealth())
             {
                 regenTimer += 1f;
                 int interval = (int)(regenTimer / 5f);
@@ -583,10 +586,15 @@ public class Player : MonoBehaviour
                 
                 healthSystem.Heal(restoreAmount);
                 UpdateHealthDisplay();
+                Debug.Log($"Регенерация здоровья: +{restoreAmount}. Текущее здоровье: {healthSystem.GetCurrentHealth()}/{healthSystem.GetMaxHealth()}");
             }
             else
             {
                 regenTimer = 0f;
+                if (isInCombat)
+                {
+                    Debug.Log($"Регенерация остановлена - игрок в бою. Таймер боя: {combatTimer:F1}");
+                }
             }
 
             yield return new WaitForSeconds(1f);
@@ -737,7 +745,8 @@ public class Player : MonoBehaviour
     {
         while (true)
         {
-            yield return new WaitForSeconds(30f); // �������� � 1 �������, ����� ��������� �� �������������
+            yield return new WaitForSeconds(30f);
+            Debug.Log($"Создание снапшота в {Time.time}");
             RecordSnapshot();            
         }
     }
@@ -758,6 +767,7 @@ public class Player : MonoBehaviour
             snapshot.expForLevelUp = expBar.GetExpForLevelUp();
         }
         saveSystem.RecordSnapshot(snapshot);
+        Debug.Log($"Создан снапшот: позиция {snapshot.position}, здоровье {snapshot.currentHealth}");
     }
     private IEnumerator DelayedRestore()
     {
@@ -789,14 +799,19 @@ public class Player : MonoBehaviour
 
     private void Die()
     {
-        if (currentHealth <= 0)
+        // Получаем снапшот 30 секунд назад
+        PlayerSnapshot snapshot = saveSystem.GetSnapshotForRewind(30f);
+        if (snapshot != null)
         {
-            // ������ Destroy(gameObject) ���� ������ ��������� 30 ������ �����
-            PlayerSnapshot snapshot = saveSystem.GetSnapshotForRewind(30f);
-            if (snapshot != null)
-                StartCoroutine(Respawn(snapshot));
-            else
-                Debug.LogWarning("������� ��� �������������� �� ������!");
+            Debug.Log($"Найден снапшот для отката. Позиция: {snapshot.position}, Здоровье: {snapshot.currentHealth}");
+            StartCoroutine(Respawn(snapshot));
+        }
+        else
+        {
+            Debug.LogWarning("Не найден снапшот для отката!");
+            // Если снапшота нет, восстанавливаем максимальное здоровье
+            currentHealth = maxHealth;
+            UpdateHealthDisplay();
         }
     }
 
@@ -808,8 +823,19 @@ public class Player : MonoBehaviour
         // Восстанавливаем позицию, поворот и здоровье
         transform.position = snapshot.position;
         transform.rotation = snapshot.rotation;
-        currentHealth = snapshot.currentHealth;
-        UpdateHealthDisplay();
+        
+        // Восстанавливаем здоровье через HealthSystem
+        if (healthSystem != null)
+        {
+            healthSystem.SetCurrentHealth(snapshot.currentHealth);
+            currentHealth = snapshot.currentHealth;
+            UpdateHealthDisplay();
+        }
+        else
+        {
+            currentHealth = snapshot.currentHealth;
+            UpdateHealthDisplay();
+        }
 
         // Штрафной опыт: теряется 10% от накопленного опыта,
         // но текущий опыт не может упасть ниже 0 для текущего уровня
@@ -829,7 +855,7 @@ public class Player : MonoBehaviour
         }
 
         isInCombat = false;
-        Debug.Log("Восстановлен игрок из снапшота с потерей 10% опыта.");
+        Debug.Log($"Восстановлен игрок из снапшота с потерей 10% опыта. Здоровье: {currentHealth}/{maxHealth}");
     }
 
     #endregion
@@ -918,5 +944,14 @@ public class Player : MonoBehaviour
     public List<CompanionNPC> GetCompanions()
     {
         return companions;
+    }
+
+    private void OnDestroy()
+    {
+        // Отписываемся от события смерти
+        if (healthSystem != null)
+        {
+            healthSystem.OnDeath.RemoveListener(Die);
+        }
     }
 }

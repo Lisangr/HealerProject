@@ -3,17 +3,23 @@ using UnityEngine;
 
 public class PlayerSaveSystem : MonoBehaviour
 {
-    // Статический список снимков, который будет доступен во всех сценах
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
     public static List<PlayerSnapshot> StaticSnapshots = new List<PlayerSnapshot>();
 
-    // Добавляем новый снимок и удаляем устаревшие (старше 60 секунд)
+    private void Awake()
+    {
+        // РћС‡РёС‰Р°РµРј СЃРЅР°РїС€РѕС‚С‹ РїСЂРё Р·Р°РіСЂСѓР·РєРµ РЅРѕРІРѕР№ СЃС†РµРЅС‹
+        StaticSnapshots.Clear();
+    }
+
+    //    пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ 60 пїЅпїЅпїЅпїЅпїЅпїЅ)
     public void RecordSnapshot(PlayerSnapshot snapshot)
     {
         StaticSnapshots.Add(snapshot);
         StaticSnapshots.RemoveAll(s => Time.time - s.timeStamp > 60f);
     }
 
-    // Возвращает снимок, сделанный примерно "secondsBack" секунд назад
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ "secondsBack" пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
     public PlayerSnapshot GetSnapshotForRewind(float secondsBack)
     {
         float targetTime = Time.time - secondsBack;
@@ -27,13 +33,13 @@ public class PlayerSaveSystem : MonoBehaviour
         return null;
     }
 
-    // Статический метод для проверки наличия сохранённых снимков
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     public static bool HasSnapshots()
     {
         return StaticSnapshots.Count > 0;
     }
 
-    // Статический метод для очистки сохранённых снимков
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     public static void ClearSnapshots()
     {
         StaticSnapshots.Clear();
