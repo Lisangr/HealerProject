@@ -93,19 +93,98 @@ public class CompanionNPC : MonoBehaviour
 
         if (!isInGroup || player == null) return;
 
-        if (currentTarget != null)
+        // Сначала следуем за игроком
+        FollowPlayer();
+
+        // Ищем ближайшего врага в радиусе обнаружения
+        Enemy nearestEnemy = FindNearestEnemyInRange();
+        
+        // Если есть враг в радиусе обнаружения, атакуем его
+        if (nearestEnemy != null)
         {
-            HandleAttack();
-        }
-        else
-        {
-            FollowPlayer();
+            HandleCombat(nearestEnemy);
         }
 
         if (attackTimer > 0)
         {
             attackTimer -= Time.deltaTime;
         }
+    }
+
+    private Enemy FindNearestEnemyInRange()
+    {
+        Enemy nearestEnemy = null;
+        float minDistance = float.MaxValue;
+
+        // Находим всех врагов
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        
+        foreach (GameObject enemyObj in enemies)
+        {
+            Enemy enemy = enemyObj.GetComponent<Enemy>();
+            if (enemy != null && !enemy.isTamed) // Проверяем, что враг не приручен
+            {
+                float distance = Vector3.Distance(transform.position, enemyObj.transform.position);
+                // Проверяем, находится ли враг в радиусе обнаружения
+                if (distance <= _npcData.detectionRange && distance < minDistance)
+                {
+                    minDistance = distance;
+                    nearestEnemy = enemy;
+                }
+            }
+        }
+
+        return nearestEnemy;
+    }
+
+    private void HandleCombat(Enemy target)
+    {
+        if (target == null) return;
+
+        float distanceToTarget = Vector3.Distance(transform.position, target.transform.position);
+        
+        if (distanceToTarget <= _npcData.attackRange)
+        {
+            // Поворот к цели
+            Vector3 direction = (target.transform.position - transform.position).normalized;
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, _npcData.rotationSpeed * Time.deltaTime);
+
+            // Атака
+            if (attackTimer <= 0)
+            {
+                Attack(target);
+            }
+        }
+    }
+
+    private void Attack(Enemy target)
+    {
+        if (target == null) return;
+
+        attackTimer = _npcData.attackCooldown;
+        isAttacking = true;
+
+        // Воспроизведение анимации атаки
+        if (animator != null)
+        {
+            animator.SetTrigger("Attack");
+        }
+
+        // Визуальные эффекты
+        if (_npcData.attackVFXPrefab != null && attackPoint != null)
+        {
+            Instantiate(_npcData.attackVFXPrefab, attackPoint.position, attackPoint.rotation);
+        }
+
+        // Звук атаки
+        if (audioSource != null && _npcData.attackSound != null)
+        {
+            audioSource.PlayOneShot(_npcData.attackSound);
+        }
+
+        // Нанесение урона
+        target.TakeDamage(_npcData.attackDamage);
     }
 
     private void FollowPlayer()
@@ -190,62 +269,6 @@ public class CompanionNPC : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position + Vector3.up * groundCheckDistance, groundCheckRadius);
         Gizmos.DrawLine(transform.position + Vector3.up * groundCheckDistance, 
                        transform.position + Vector3.up * groundCheckDistance + Vector3.down * groundCheckDistance * 2);
-    }
-
-    private void HandleAttack()
-    {
-        if (currentTarget == null) return;
-
-        float distanceToTarget = Vector3.Distance(transform.position, currentTarget.transform.position);
-        
-        if (distanceToTarget <= _npcData.attackRange)
-        {
-            // Поворот к цели
-            Vector3 direction = (currentTarget.transform.position - transform.position).normalized;
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, _npcData.rotationSpeed * Time.deltaTime);
-
-            // Атака
-            if (attackTimer <= 0)
-            {
-                Attack();
-            }
-        }
-        else
-        {
-            // Движение к цели
-            Vector3 targetPosition = currentTarget.transform.position;
-            transform.position = Vector3.MoveTowards(transform.position, targetPosition, _npcData.moveSpeed * Time.deltaTime);
-        }
-    }
-
-    private void Attack()
-    {
-        if (currentTarget == null) return;
-
-        attackTimer = _npcData.attackCooldown;
-        isAttacking = true;
-
-        // Воспроизведение анимации атаки
-        if (animator != null)
-        {
-            animator.SetTrigger("Attack");
-        }
-
-        // Визуальные эффекты
-        if (_npcData.attackVFXPrefab != null && attackPoint != null)
-        {
-            Instantiate(_npcData.attackVFXPrefab, attackPoint.position, attackPoint.rotation);
-        }
-
-        // Звук атаки
-        if (audioSource != null && _npcData.attackSound != null)
-        {
-            audioSource.PlayOneShot(_npcData.attackSound);
-        }
-
-        // Нанесение урона
-        currentTarget.TakeDamage(_npcData.attackDamage);
     }
 
     public void TakeDamage(int damage)

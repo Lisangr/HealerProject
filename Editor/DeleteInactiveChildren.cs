@@ -1,10 +1,11 @@
 using UnityEngine;
 using UnityEditor;
+using System.Collections.Generic;
 
 public class DeleteInactiveChildren : EditorWindow
 {
-    // Массив объектов, которые будем проверять
-    public GameObject[] targetObjects;
+    private List<GameObject> targetObjects = new List<GameObject>();
+    private Vector2 scrollPosition;
 
     [MenuItem("Tools/Delete Inactive Children")]
     public static void ShowWindow()
@@ -14,68 +15,85 @@ public class DeleteInactiveChildren : EditorWindow
 
     private void OnGUI()
     {
-        // Проверка инициализации массива
-        if (targetObjects == null)
-        {
-            targetObjects = new GameObject[0];
-        }
+        GUILayout.Label("Удаление неактивных дочерних объектов", EditorStyles.boldLabel);
 
-        // Отображаем поле для массива объектов, куда можно перетаскивать объекты
-        EditorGUILayout.LabelField("Parent Objects");
+        GUILayout.Space(10);
+        GUILayout.Label("Перетащите объекты сюда:", EditorStyles.boldLabel);
 
-        // Используем ObjectField для отображения каждого элемента массива
-        for (int i = 0; i < targetObjects.Length; i++)
-        {
-            targetObjects[i] = (GameObject)EditorGUILayout.ObjectField($"Object {i + 1}", targetObjects[i], typeof(GameObject), true);
-        }
+        // Область для Drag-and-Drop
+        Rect dropArea = GUILayoutUtility.GetRect(0.0f, 50.0f, GUILayout.ExpandWidth(true));
+        GUI.Box(dropArea, "Перетащите объекты сюда");
 
-        // Кнопка для добавления новых объектов в массив
-        if (GUILayout.Button("Add Object"))
+        Event evt = Event.current;
+        switch (evt.type)
         {
-            // Увеличиваем размер массива на 1 и добавляем новый объект
-            ArrayUtility.Add(ref targetObjects, null);
-        }
+            case EventType.DragUpdated:
+            case EventType.DragPerform:
+                if (!dropArea.Contains(evt.mousePosition))
+                    break;
 
-        // Кнопка для удаления неактивных детей
-        if (GUILayout.Button("Delete Inactive Children"))
-        {
-            if (targetObjects != null && targetObjects.Length > 0)
-            {
-                foreach (var targetObject in targetObjects)
+                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+
+                if (evt.type == EventType.DragPerform)
                 {
-                    if (targetObject != null)
+                    DragAndDrop.AcceptDrag();
+
+                    foreach (Object dragged in DragAndDrop.objectReferences)
                     {
-                        DeleteInactiveObjects(targetObject);
-                    }
-                    else
-                    {
-                        Debug.LogWarning("One of the objects in the array is null.");
+                        if (dragged is GameObject go)
+                        {
+                            // Если объект еще не в списке, добавляем его
+                            if (!targetObjects.Contains(go))
+                            {
+                                targetObjects.Add(go);
+                            }
+                        }
                     }
                 }
-            }
-            else
+                break;
+        }
+
+        // Отображение списка объектов
+        scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(150));
+        for (int i = 0; i < targetObjects.Count; i++)
+        {
+            EditorGUILayout.BeginHorizontal();
+            targetObjects[i] = (GameObject)EditorGUILayout.ObjectField(targetObjects[i], typeof(GameObject), true);
+            if (GUILayout.Button("Удалить", GUILayout.Width(60)))
             {
-                Debug.LogWarning("Please assign parent objects to scan.");
+                targetObjects.RemoveAt(i);
+                i--;
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+        GUILayout.EndScrollView();
+
+        // Кнопка для удаления неактивных детей
+        if (GUILayout.Button("Удалить неактивные дети"))
+        {
+            foreach (var targetObject in targetObjects)
+            {
+                if (targetObject != null)
+                {
+                    DeleteInactiveObjects(targetObject);
+                }
             }
         }
     }
 
     private static void DeleteInactiveObjects(GameObject parentObject)
     {
-        // Проверка, что объект существует
         if (parentObject == null)
         {
             Debug.LogError("Parent object is null.");
             return;
         }
 
-        // Получаем все дочерние объекты
+        // Получаем все дочерние объекты, включая неактивные
         Transform[] children = parentObject.GetComponentsInChildren<Transform>(true);
 
-        // Проходим по всем дочерним объектам
         foreach (Transform child in children)
         {
-            // Если объект не активен в иерархии, удаляем его
             if (!child.gameObject.activeInHierarchy)
             {
                 DestroyImmediate(child.gameObject);

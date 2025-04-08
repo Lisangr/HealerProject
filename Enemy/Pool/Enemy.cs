@@ -71,10 +71,41 @@ public class Enemy : MonoBehaviour
             return;
         }
 
-        // Инициализация HealthSystem
-        healthSystem.SetMaxHealth(_enemyData.health);
-        healthSystem.SetCurrentHealth(_enemyData.health);
-        healthSystem.OnDeath.AddListener(OnHealthSystemDeath);
+        // Проверка и инициализация HealthSystem
+        if (healthSystem == null)
+        {
+            healthSystem = GetComponent<HealthSystem>();
+            if (healthSystem == null)
+            {
+                healthSystem = gameObject.AddComponent<HealthSystem>();
+                Debug.Log($"Враг {gameObject.name}: Автоматически добавлен компонент HealthSystem");
+            }
+        }
+
+        // Настраиваем HealthSystem
+        var healthSystemComponent = healthSystem as HealthSystem;
+        if (healthSystemComponent != null)
+        {
+            // Устанавливаем тип существа
+            healthSystemComponent.SetEntityType(HealthSystem.EntityType.Enemy);
+            // Передаем конфиг
+            healthSystemComponent.SetEnemyConfig(enemyConfig);
+            // Обновляем здоровье из конфига
+            healthSystemComponent.RefreshFromConfig();
+            Debug.Log($"Враг {gameObject.name}: HealthSystem настроен. Максимальное здоровье: {healthSystem.GetMaxHealth()}");
+        }
+
+        // Подписываемся на событие смерти
+        if (healthSystem != null)
+        {
+            Debug.Log($"Враг {gameObject.name}: Подписываемся на событие смерти");
+            healthSystem.OnDeath.AddListener(OnHealthSystemDeath);
+            Debug.Log($"Враг {gameObject.name}: Подписка на событие смерти завершена");
+        }
+        else
+        {
+            Debug.LogError($"Враг {gameObject.name}: Не удалось подписаться на событие смерти - healthSystem = null");
+        }
 
         // Находим игрока на сцене
         Player player = FindObjectOfType<Player>();
@@ -213,12 +244,12 @@ public class Enemy : MonoBehaviour
             float step = _enemyData.moveSpeed * Time.deltaTime;
             Vector3 newPos = Vector3.MoveTowards(transform.position, target, step);
 
-            int enemyLayer = LayerMask.NameToLayer("Enemy");
-            int layerMask = ~(1 << enemyLayer);
+            // Проверяем землю под врагом
+            int groundLayer = LayerMask.GetMask("Ground"); // Предполагаем, что земля находится на слое "Ground"
             RaycastHit hit;
-            if (Physics.Raycast(newPos + Vector3.up * 2f, Vector3.down, out hit, 5f, layerMask))
+            if (Physics.Raycast(newPos + Vector3.up * 2f, Vector3.down, out hit, 5f, groundLayer))
             {
-                float heightSmoothFactor = 5f;
+                float heightSmoothFactor = 2f; // Уменьшаем фактор для более плавной корректировки
                 newPos.y = Mathf.Lerp(transform.position.y, hit.point.y, heightSmoothFactor * Time.deltaTime);
             }
 
@@ -320,13 +351,20 @@ public class Enemy : MonoBehaviour
             Debug.LogWarning($"Враг {gameObject.name}: попытка нанести урон с _enemyData = null");
             return;
         }
+
+        if (healthSystem == null)
+        {
+            Debug.LogError($"Враг {gameObject.name}: healthSystem не инициализирован!");
+            return;
+        }
         
         if (damage < 0)
         {
             Debug.LogWarning($"Враг {gameObject.name}: получен отрицательный урон ({damage})");
             damage = 0;
         }
-        
+
+        Debug.Log($"Враг {gameObject.name}: получает урон {damage}");
         healthSystem.TakeDamage(damage);
         Debug.Log($"Враг {gameObject.name}: получил урон {damage}, оставшееся здоровье: {healthSystem.GetCurrentHealth()}/{healthSystem.GetMaxHealth()}");
     }
@@ -334,181 +372,77 @@ public class Enemy : MonoBehaviour
     private void OnHealthSystemDeath()
     {
         if (isDead) return;
-        
         isDead = true;
-        
-        // Вызываем события с проверками на null
-        if (_enemyData != null)
-        {
-            OnEnemyDeath?.Invoke(_enemyData.experience);
-        }
-        else
-        {
-            OnEnemyDeath?.Invoke(0);
-        }
-        
-        if (playerTransform != null)
-        {
-            OnEnemyDeathWithPosition?.Invoke(playerTransform.position);
-        }
-        else
-        {
-            OnEnemyDeathWithPosition?.Invoke(transform.position);
-        }
-        
-        OnEnemyDestroy?.Invoke();
-        
-        if (!string.IsNullOrEmpty(enemyName))
-        {
-            OnEnemyKilled?.Invoke(enemyName);
-        }
+
+        Debug.Log($"Враг {gameObject.name} умер через HealthSystem");
 
         // Отключаем коллайдеры
-        Collider[] colliders = GetComponents<Collider>();
-        foreach (Collider col in colliders)
+        var colliders = GetComponents<Collider>();
+        foreach (var collider in colliders)
         {
-            col.enabled = false;
+            collider.enabled = false;
         }
-        
+
         // Настраиваем Rigidbody для эффекта падения
-        Rigidbody rb = GetComponent<Rigidbody>();
+        var rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
             rb.isKinematic = false;
             rb.useGravity = true;
-            rb.drag = 2f;
-            rb.angularDrag = 0.5f;
-            rb.AddForce(new Vector3(Random.Range(-1f, 1f), 0.1f, Random.Range(-1f, 1f)), ForceMode.Impulse);
         }
 
+        // Проигрываем анимацию смерти
         if (animationController != null)
         {
             animationController.PlayAnimation(animationController.animationStates.Die);
         }
-        
-        Debug.Log($"Враг {gameObject.name}: умер, будет возвращен в пул через 10 секунд");
-        StartCoroutine(ReturnToPoolWithDelay(10f));
+
+        // Вызываем события смерти
+        if (OnEnemyDeath != null)
+        {
+            OnEnemyDeath(_enemyData.experience);
+            Debug.Log($"Вызвано событие OnEnemyDeath с {_enemyData.experience} опытом");
+        }
+
+        if (OnEnemyDeathWithPosition != null)
+        {
+            OnEnemyDeathWithPosition(transform.position);
+            Debug.Log($"Вызвано событие OnEnemyDeathWithPosition с позицией {transform.position}");
+        }
+
+        if (OnEnemyDestroy != null)
+        {
+            OnEnemyDestroy();
+            Debug.Log("Вызвано событие OnEnemyDestroy");
+        }
+
+        if (OnEnemyKilled != null)
+        {
+            OnEnemyKilled(enemyName);
+            Debug.Log($"Вызвано событие OnEnemyKilled для врага {enemyName}");
+        }
+
+        // Возвращаем врага в пул через некоторое время
+        StartCoroutine(ReturnToPoolAfterDelay(3f));
     }
 
-    // Метод для возврата в пул с задержкой
-    private IEnumerator ReturnToPoolWithDelay(float delay)
+    private IEnumerator ReturnToPoolAfterDelay(float delay)
     {
-        // Ждем указанное время (основное время тело лежит без изменений)
-        yield return new WaitForSeconds(delay - 2f); // Вычитаем 2 секунды для эффекта исчезновения
+        yield return new WaitForSeconds(delay);
         
-        // Находим все рендереры для реализации эффекта затухания
-        Renderer[] renderers = GetComponentsInChildren<Renderer>();
-        
-        // Запоминаем начальные значения
-        Dictionary<Renderer, Color[]> originalColors = new Dictionary<Renderer, Color[]>();
-        
-        // Сохраняем оригинальные цвета
-        foreach (Renderer renderer in renderers)
-        {
-            Color[] colors = new Color[renderer.materials.Length];
-            for (int i = 0; i < renderer.materials.Length; i++)
-            {
-                colors[i] = renderer.materials[i].color;
-            }
-            originalColors[renderer] = colors;
-        }
-        
-        // Постепенно уменьшаем alpha в течение 2 секунд
-        float fadeTime = 2f;
-        float startTime = Time.time;
-        
-        while (Time.time < startTime + fadeTime)
-        {
-            float progress = (Time.time - startTime) / fadeTime;
-            float alpha = 1f - progress;
-            
-            foreach (Renderer renderer in renderers)
-            {
-                for (int i = 0; i < renderer.materials.Length; i++)
-                {
-                    // Получаем начальный цвет
-                    Color originalColor = originalColors[renderer][i];
-                    
-                    // Создаем новый цвет с измененной прозрачностью
-                    Color fadedColor = new Color(originalColor.r, originalColor.g, originalColor.b, originalColor.a * alpha);
-                    
-                    // Применяем новый цвет
-                    renderer.materials[i].color = fadedColor;
-                }
-            }
-            
-            yield return null;
-        }
-        
-        // Проверяем, что объект все еще активен
-        if (gameObject.activeSelf)
-        {
-            // Логируем для отладки
-            Debug.Log($"Враг {gameObject.name}: возвращается в пул после {delay} секунд");
-            
-            // Восстанавливаем материалы перед возвратом в пул
-            foreach (Renderer renderer in renderers)
-            {
-                for (int i = 0; i < renderer.materials.Length; i++)
-                {
-                    if (originalColors.ContainsKey(renderer) && i < originalColors[renderer].Length)
-                    {
-                        renderer.materials[i].color = originalColors[renderer][i];
-                    }
-                }
-            }
-            
-            ReturnToPool();
-        }
-    }
-
-    // Возвращение врага в пул (сброс состояний)
-    private void ReturnToPool()
-    {
-        // Сбрасываем состояния
-        healthSystem.SetCurrentHealth(healthSystem.GetMaxHealth());
-        hasForcedDestination = false;
-        isMovingToRandomPoint = false;
-        isDead = false;  // Сбрасываем флаг смерти
-        
-        // Восстанавливаем коллайдеры
-        Collider[] colliders = GetComponents<Collider>();
-        foreach (Collider col in colliders)
-        {
-            col.enabled = true;
-        }
-        
-        // Восстанавливаем Rigidbody, если есть
-        Rigidbody rb = GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.isKinematic = true;  // Обычно у врагов isKinematic=true для контроля перемещения
-            rb.useGravity = false;
-            rb.velocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-        }
-        
-        // Проверка на null перед вызовом анимации
-        if (animationController != null)
-        {
-            animationController.PlayAnimation(animationController.animationStates.WalkForward);
-        }
-        
-        // Проверка на null перед возвратом в пул
         if (_enemyPool != null)
         {
             _enemyPool.ReturnEnemy(this);
         }
         else
         {
-            Debug.LogWarning($"Враг {gameObject.name}: _enemyPool = null, не удалось вернуть в пул");
-            // Если пул не найден, просто деактивируем объект
-            gameObject.SetActive(false);
+            Destroy(gameObject);
         }
     }
 
     private void OnEnable()
     {
+        Debug.Log($"Враг {gameObject.name}: OnEnable");
         OnEnemyDeathWithPosition += OnDeathWithPosition;
         _spawnPosition = transform.position;
         
@@ -530,11 +464,27 @@ public class Enemy : MonoBehaviour
         {
             animationController = GetComponent<PlayerAnimationController>();
         }
+
+        // Проверяем подписку на событие смерти
+        if (healthSystem != null && !healthSystem.OnDeath.GetPersistentEventCount().Equals(1))
+        {
+            Debug.Log($"Враг {gameObject.name}: Переподписываемся на событие смерти");
+            healthSystem.OnDeath.RemoveListener(OnHealthSystemDeath);
+            healthSystem.OnDeath.AddListener(OnHealthSystemDeath);
+        }
     }
 
     private void OnDisable()
     {
+        Debug.Log($"Враг {gameObject.name}: OnDisable");
         OnEnemyDeathWithPosition -= OnDeathWithPosition;
+        
+        // Отписываемся от события смерти
+        if (healthSystem != null)
+        {
+            Debug.Log($"Враг {gameObject.name}: Отписываемся от события смерти");
+            healthSystem.OnDeath.RemoveListener(OnHealthSystemDeath);
+        }
     }
 
     //  :          

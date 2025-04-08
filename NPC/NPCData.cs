@@ -16,6 +16,7 @@ public class NPCData
     public float attackCooldown = 1f;
     public float followDistance = 3f;
     public float rotationSpeed = 5f;
+    public float detectionRange = 5f; // Радиус обнаружения врагов
 
     [Header("Визуальные эффекты")]
     public GameObject attackVFXPrefab;

@@ -29,7 +29,24 @@ public class HealthSystem : MonoBehaviour
 
     private void Awake()
     {
+        Debug.Log($"HealthSystem на {gameObject.name}: Awake");
         InitializeHealth();
+    }
+
+    private void OnEnable()
+    {
+        Debug.Log($"HealthSystem на {gameObject.name}: OnEnable");
+        if (OnDeath == null)
+        {
+            OnDeath = new UnityEvent();
+            Debug.Log($"HealthSystem на {gameObject.name}: OnDeath инициализирован");
+        }
+    }
+
+    private void OnDisable()
+    {
+        Debug.Log($"HealthSystem на {gameObject.name}: OnDisable");
+        OnDeath.RemoveAllListeners();
     }
 
     private void InitializeHealth()
@@ -95,13 +112,20 @@ public class HealthSystem : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        if (currentHealth <= 0) return;
+        if (currentHealth <= 0)
+        {
+            Debug.Log($"HealthSystem на {gameObject.name}: попытка нанести урон мертвому существу");
+            return;
+        }
 
+        Debug.Log($"HealthSystem на {gameObject.name}: получение урона {damage}. Текущее здоровье: {currentHealth}");
         currentHealth = Mathf.Max(0, currentHealth - damage);
         OnHealthChanged?.Invoke(currentHealth);
+        Debug.Log($"HealthSystem на {gameObject.name}: после получения урона здоровье: {currentHealth}/{maxHealth}");
 
         if (currentHealth <= 0)
         {
+            Debug.Log($"HealthSystem на {gameObject.name}: здоровье достигло 0, вызываем смерть");
             Die();
         }
     }
@@ -116,8 +140,9 @@ public class HealthSystem : MonoBehaviour
 
     private void Die()
     {
+        Debug.Log($"HealthSystem на {gameObject.name}: вызов события смерти");
         OnDeath?.Invoke();
-        // Здесь можно добавить дополнительную логику смерти
+        Debug.Log($"HealthSystem на {gameObject.name}: событие смерти вызвано");
     }
 
     public int GetCurrentHealth()
@@ -168,5 +193,17 @@ public class HealthSystem : MonoBehaviour
     public void RefreshFromConfig()
     {
         InitializeHealth();
+    }
+
+    public void SetEntityType(EntityType type)
+    {
+        entityType = type;
+        Debug.Log($"HealthSystem на {gameObject.name}: установлен тип существа {type}");
+    }
+
+    public void SetEnemyConfig(EnemyConfig config)
+    {
+        enemyConfig = config;
+        Debug.Log($"HealthSystem на {gameObject.name}: установлен EnemyConfig");
     }
 } 

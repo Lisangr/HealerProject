@@ -3,8 +3,8 @@ using UnityEngine;
 
 public class EnemyPool : MonoBehaviour
 {
-    [SerializeField] private List<Enemy> enemyPrefabs; // ������� ������
-    [SerializeField] private int initialPoolSize = 10; // ������ ���� ��� ������� ����
+    [SerializeField] private List<Enemy> enemyPrefabs; // ������� ������
+    [SerializeField] private int initialPoolSize = 10; // ������ ���� ��� ������� ����
     [SerializeField] private Transform enemiesParent;
 
     private Dictionary<Enemy, Queue<Enemy>> enemyPools = new Dictionary<Enemy, Queue<Enemy>>();
@@ -40,7 +40,7 @@ public class EnemyPool : MonoBehaviour
         Enemy enemy = Instantiate(prefab, enemiesParent);
         enemy.OriginalPrefab = prefab;
         enemy.gameObject.SetActive(false);
-        // ������� "(Clone)" �� �����
+        // ������� "(Clone)" �� �����
         enemy.name = enemy.name.Replace("(Clone)", "").Trim();
         //enemy.name = prefab.name;
 
@@ -54,10 +54,13 @@ public class EnemyPool : MonoBehaviour
         {
             if (pool.Count > 0)
             {
-                return pool.Dequeue();
+                Enemy enemy = pool.Dequeue();
+                Debug.Log($"Извлечение врага {enemy.name} из пула. Осталось в пуле: {pool.Count}");
+                return enemy;
             }
             else
             {
+                Debug.Log("Создание нового врага, так как пул пуст");
                 return InstantiateEnemy(enemyPrefab);
             }
         }
@@ -67,11 +70,28 @@ public class EnemyPool : MonoBehaviour
 
     public void ReturnEnemy(Enemy enemy)
     {
+        if (enemy == null)
+        {
+            Debug.LogError("Попытка вернуть null врага в пул");
+            return;
+        }
+
+        Debug.Log($"Возврат врага {enemy.name} в пул");
+        
         Enemy prefab = enemy.OriginalPrefab;
         if (enemyPools.ContainsKey(prefab))
         {
+            Queue<Enemy> pool = enemyPools[prefab];
+            if (pool.Contains(enemy))
+            {
+                Debug.LogWarning($"Враг {enemy.name} уже находится в пуле");
+                return;
+            }
+
             enemy.gameObject.SetActive(false);
-            enemyPools[prefab].Enqueue(enemy);
+            pool.Enqueue(enemy);
+            
+            Debug.Log($"Враг {enemy.name} успешно возвращен в пул. Текущий размер пула: {pool.Count}");
         }
         else
         {

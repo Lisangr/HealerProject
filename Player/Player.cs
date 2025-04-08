@@ -2,7 +2,6 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using static Enemy;
 using System.Collections.Generic;
 
 public class Player : MonoBehaviour
@@ -79,6 +78,7 @@ public class Player : MonoBehaviour
     void Start()
     {
         movement = GetComponent<PlayerMovement>();
+        healthSystem = GetComponent<HealthSystem>();
         animationController = GetComponent<PlayerAnimationController>();
 
         // Инициализация системы сохранения
@@ -230,10 +230,14 @@ public class Player : MonoBehaviour
     // ����� �������� ��� (��������)
     private Enemy FindNearestTarget()
     {
-        float detectionRange = currentPlayerData.attackRange; // ����� ������ ��������� ��������, ���� ���������
+        float detectionRange = currentPlayerData.attackRange;
         int enemyLayerMask = LayerMask.GetMask("Enemy");
-
+        
+        Debug.Log($"Поиск цели: дальность {detectionRange}, маска слоя: {enemyLayerMask}");
+        
         Collider[] enemyColliders = Physics.OverlapSphere(transform.position, detectionRange, enemyLayerMask);
+        Debug.Log($"Найдено потенциальных целей: {enemyColliders.Length}");
+        
         Enemy nearestEnemy = null;
         float minDistance = Mathf.Infinity;
 
@@ -243,13 +247,25 @@ public class Player : MonoBehaviour
             if (enemy != null)
             {
                 float distance = Vector3.Distance(transform.position, enemy.transform.position);
+                Debug.Log($"Проверка врага {enemy.name}: дистанция {distance}");
                 if (distance < minDistance)
                 {
                     minDistance = distance;
                     nearestEnemy = enemy;
+                    Debug.Log($"Новая ближайшая цель: {enemy.name} на дистанции {distance}");
                 }
             }
         }
+        
+        if (nearestEnemy == null)
+        {
+            Debug.Log("Цель не найдена в радиусе атаки");
+        }
+        else
+        {
+            Debug.Log($"Выбрана цель: {nearestEnemy.name} на дистанции {minDistance}");
+        }
+        
         return nearestEnemy;
     }
 
@@ -261,11 +277,13 @@ public class Player : MonoBehaviour
 
         // Находим ближайшую цель
         Enemy targetEnemy = FindNearestTarget();
+        Debug.Log($"Дальняя атака: найдена цель: {(targetEnemy != null ? targetEnemy.name : "null")}");
         currentTarget = targetEnemy; // Сохраняем текущую цель
 
         if (targetEnemy != null)
         {
-            // ������������ ������ � ������� �����
+            Debug.Log($"Дальняя атака: Наносим урон {currentPlayerData.attack} врагу {targetEnemy.name}");
+            //    �����
             Vector3 directionToEnemy = (targetEnemy.transform.position - transform.position).normalized;
             directionToEnemy.y = 0; // ������� �������� �� ���������, ����� ����� �� ����������
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(directionToEnemy), 0.1f);
@@ -296,7 +314,7 @@ public class Player : MonoBehaviour
 
             // ������� ���� ��������������� ���� (���� ����� �����, ����� ������ ��������� ����)
             targetEnemy.TakeDamage(currentPlayerData.attack);
-            Debug.Log($"������� ���������������� �����: {targetEnemy.name}");
+            Debug.Log($"Дальняя атака: Урон нанесен");
         }
         else
         {
@@ -327,6 +345,7 @@ public class Player : MonoBehaviour
     // ����� �������� ���
     private void MeleeAttack()
     {
+        Debug.Log("Ближняя атака: Начало атаки");
         // Воспроизведение звука взмаха меча
         if (meleeAttackAudioSource != null && swordSwingClip != null)
             meleeAttackAudioSource.PlayOneShot(swordSwingClip);
@@ -367,19 +386,21 @@ public class Player : MonoBehaviour
 
         if (targetEnemy != null)
         {
+            Debug.Log($"Ближняя атака: Наносим урон {currentPlayerData.attack} врагу {targetEnemy.name}");
             Vector3 direction = (targetEnemy.transform.position - transform.position).normalized;
             direction.y = 0;
             transform.rotation = Quaternion.LookRotation(direction);
 
-            Debug.Log($"������� �����: {targetEnemy.name}");
+            Debug.Log($"Ближняя атака: Наносим урон {currentPlayerData.attack} врагу {targetEnemy.name}");
             targetEnemy.TakeDamage(currentPlayerData.attack);
+            Debug.Log($"Ближняя атака: Урон нанесен");
 
             if (meleeHitVFXPrefab != null)
                 Instantiate(meleeHitVFXPrefab, targetEnemy.transform.position, Quaternion.identity);
         }
         else
         {
-            Debug.Log("������ �� ������� � �������� melee-�����.");
+            Debug.Log("    melee-.");
         }
     }
 
@@ -410,13 +431,13 @@ public class Player : MonoBehaviour
         {
             float maxDistance = currentPlayerData.attackRange;
 
-            // ��� �� ������ (����������� �����)
+            //    ( )
             Ray cameraRay = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
             Gizmos.color = Color.magenta;
             Gizmos.DrawLine(cameraRay.origin, cameraRay.origin + cameraRay.direction * maxDistance);
-            Gizmos.DrawWireSphere(cameraRay.origin, 0.1f); // ��������� ����� ��� �����������
+            Gizmos.DrawWireSphere(cameraRay.origin, 0.1f); //    
 
-            // ��� ��� melee-����� �� ��������� (��� ������)
+            //   melee-   ( )
             Ray attackRay = GetAttackRayFromPlayer();
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(attackRay.origin, sphereCastRadius);

@@ -41,7 +41,9 @@ public class ExpBar : MonoBehaviour
 
     private void OnEnable()
     {
+        Debug.Log("ExpBar: OnEnable - Подписка на события");
         Enemy.OnEnemyDeath += AddExperience;
+        Debug.Log("ExpBar: Подписка на OnEnemyDeath завершена");
 
         // Подписка на события от менеджеров квестов
         SubscribeToQuestManagers();
@@ -49,7 +51,9 @@ public class ExpBar : MonoBehaviour
 
     private void OnDisable()
     {
+        Debug.Log("ExpBar: OnDisable - Отписка от событий");
         Enemy.OnEnemyDeath -= AddExperience;
+        Debug.Log("ExpBar: Отписка от OnEnemyDeath завершена");
 
         // Отписка от событий
         UnsubscribeFromQuestManagers();
@@ -160,8 +164,9 @@ public class ExpBar : MonoBehaviour
     // Метод вызывается при получении опыта за убийство врага
     private void AddExperience(int exp)
     {
+        Debug.Log($"ExpBar: Получено событие OnEnemyDeath с опытом {exp}");
         AddExperienceInternal(exp);
-        Debug.Log($"Получен опыт за убийство врага: +{exp} опыта. Новый опыт: {currentExp}/{expForLevelUp}");
+        Debug.Log($"ExpBar: Опыт добавлен. Текущий опыт: {currentExp}/{expForLevelUp}");
     }
 
     // Общий метод для добавления опыта
