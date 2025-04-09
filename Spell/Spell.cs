@@ -213,19 +213,23 @@ public class Spell : MonoBehaviour
             }
             else
             {
-                // Если HealthSystem не найден, пробуем получить CompanionNPC
+                // Фолбэк: если по какой-то причине HealthSystem не найден, пытаемся получить его из объекта CompanionNPC
                 CompanionNPC companion = caster.GetComponent<CompanionNPC>();
                 if (companion != null)
                 {
-                    companion.Heal((int)spellData.power);
-                    Debug.Log($"(Fallback) Исцеление {spellData.power} здоровья применено к {companion.gameObject.name}");
+                    HealthSystem hs = companion.GetComponent<HealthSystem>();
+                    if (hs != null)
+                    {
+                        hs.Heal((int)spellData.power);
+                        Debug.Log($"(Fallback) Исцеление {spellData.power} здоровья применено к {hs.gameObject.name}");
+                    }
                 }
             }
         }
         else if (spellData.power > 0)
         {
             healthSystem.TakeDamage((int)spellData.power);
-            Debug.Log($"Урон {spellData.power} нанесен {healthSystem.gameObject.name}");
+            Debug.Log($"Урон {spellData.power} нанесён {healthSystem.gameObject.name}");
         }
     }
 

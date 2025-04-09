@@ -9,51 +9,52 @@ public class CompanionUI : MonoBehaviour, IPointerClickHandler
     [SerializeField] private Text nameText;
     [SerializeField] private Text healthText;
     [SerializeField] private Image healthBarFill;
-    
+
     [Header("Health Bar Colors")]
-    [SerializeField] private Color fullHealthColorTop = new Color(0.2f, 1f, 0.2f); // Светло-зеленый
-    [SerializeField] private Color fullHealthColorBottom = new Color(0f, 0.8f, 0f); // Темно-зеленый
-    [SerializeField] private Color lowHealthColorTop = new Color(1f, 0.2f, 0.2f); // Светло-красный
-    [SerializeField] private Color lowHealthColorBottom = new Color(0.8f, 0f, 0f); // Темно-красный
-    [SerializeField] private float colorTransitionSpeed = 5f; // Скорость изменения цвета
+    [SerializeField] private Color fullHealthColorTop = new Color(0.2f, 1f, 0.2f);
+    [SerializeField] private Color fullHealthColorBottom = new Color(0f, 0.8f, 0f);
+    [SerializeField] private Color lowHealthColorTop = new Color(1f, 0.2f, 0.2f);
+    [SerializeField] private Color lowHealthColorBottom = new Color(0.8f, 0f, 0f);
+    [SerializeField] private float colorTransitionSpeed = 5f;
 
     private CompanionNPC companion;
+    private HealthSystem companionHealthSystem; // Ссылка на компонент HealthSystem
     private int maxHealth;
     private UIGradient healthBarGradient;
     private Color32 currentTopColor;
     private Color32 currentBottomColor;
     private Coroutine colorUpdateCoroutine;
     private bool isSelected = false;
+
+    // Убираем метод OnEnable — мы будем вызывать Initialize извне после создания UI.
+    // private void OnEnable() { ... }
+
     public void Initialize(CompanionNPC companionNPC)
     {
         // Сохраняем ссылку на компаньона
         companion = companionNPC;
 
-        // Пытаемся получить компонент HealthSystem с объекта компаньона
-        HealthSystem healthSystem = companion.GetComponent<HealthSystem>();
-        if (healthSystem != null)
+        // Получаем компонент HealthSystem с объекта компаньона
+        companionHealthSystem = companion.GetComponent<HealthSystem>();
+        if (companionHealthSystem != null)
         {
-            // Подписываемся на событие обновления здоровья
-            healthSystem.OnHealthChanged.AddListener(UpdateHealth);
-
-            // Устанавливаем максимальное здоровье для UI
-            maxHealth = healthSystem.GetMaxHealth();
-
-            // Обновляем UI начальными данными здоровья
-            UpdateHealth(healthSystem.GetCurrentHealth());
+            // Подписываемся на событие обновления здоровья из HealthSystem
+            companionHealthSystem.OnHealthChanged.AddListener(UpdateHealth);
+            maxHealth = companionHealthSystem.GetMaxHealth();
+            UpdateHealth(companionHealthSystem.GetCurrentHealth());
         }
         else
         {
             Debug.LogWarning("HealthSystem не найден на объекте компаньона " + companionNPC.gameObject.name);
         }
 
-        // Обновляем текст с именем компаньона, если компонент Text задан
+        // Устанавливаем текст с именем компаньона
         if (nameText != null)
         {
             nameText.text = companionNPC.GetNPCName();
         }
 
-        // Инициализируем визуализацию полоски здоровья
+        // Инициализируем визуальное представление полоски здоровья
         if (healthBarFill != null)
         {
             healthBarFill.fillAmount = 1f;
@@ -62,8 +63,6 @@ public class CompanionUI : MonoBehaviour, IPointerClickHandler
             {
                 healthBarGradient = healthBarFill.gameObject.AddComponent<UIGradient>();
             }
-
-            // Устанавливаем начальные цвета для градиента
             currentTopColor = fullHealthColorTop;
             currentBottomColor = fullHealthColorBottom;
             healthBarGradient.SetColors(currentTopColor, currentBottomColor);
@@ -74,15 +73,10 @@ public class CompanionUI : MonoBehaviour, IPointerClickHandler
     {
         if (healthBarFill != null)
         {
-            // Обновляем полоску здоровья
             float healthPercent = (float)currentHealth / maxHealth;
             healthBarFill.fillAmount = healthPercent;
-
-            // Обновляем градиент
             UpdateGradientColors(healthPercent);
         }
-
-        // Обновляем текст здоровья
         UpdateHealthText(currentHealth);
     }
 
@@ -90,14 +84,11 @@ public class CompanionUI : MonoBehaviour, IPointerClickHandler
     {
         if (healthBarGradient != null)
         {
-            // Останавливаем предыдущую корутину, если она запущена
             if (colorUpdateCoroutine != null)
                 StopCoroutine(colorUpdateCoroutine);
 
-            // Запускаем новую корутину для плавного изменения цвета
             Color32 targetTopColor = Color32.Lerp(lowHealthColorTop, fullHealthColorTop, healthPercent);
             Color32 targetBottomColor = Color32.Lerp(lowHealthColorBottom, fullHealthColorBottom, healthPercent);
-            
             colorUpdateCoroutine = StartCoroutine(UpdateColorsCoroutine(targetTopColor, targetBottomColor));
         }
     }
@@ -108,9 +99,7 @@ public class CompanionUI : MonoBehaviour, IPointerClickHandler
         {
             currentTopColor = Color32.Lerp(currentTopColor, targetTop, Time.deltaTime * colorTransitionSpeed);
             currentBottomColor = Color32.Lerp(currentBottomColor, targetBottom, Time.deltaTime * colorTransitionSpeed);
-            
             healthBarGradient.SetColors(currentTopColor, currentBottomColor);
-            
             yield return null;
         }
     }
@@ -124,7 +113,7 @@ public class CompanionUI : MonoBehaviour, IPointerClickHandler
     {
         if (healthText != null)
         {
-            healthText.text = $"{currentHealth}/{maxHealth}";
+            healthText.text = currentHealth.ToString();
         }
     }
 
@@ -139,49 +128,37 @@ public class CompanionUI : MonoBehaviour, IPointerClickHandler
     public void OnPointerClick(PointerEventData eventData)
     {
         isSelected = true;
-        // Можно добавить визуальную индикацию выбора
-        // Например, изменить цвет рамки или добавить эффект выделения
     }
 
     private void RemoveFromGroup()
     {
         if (companion != null)
         {
-            // Отписываемся от событий
-            companion.OnHealthChanged.RemoveListener(UpdateHealth);
-            
-            // Удаляем компаньона из группы
+            if (companionHealthSystem != null)
+            {
+                companionHealthSystem.OnHealthChanged.RemoveListener(UpdateHealth);
+            }
             companion.RemoveFromGroup();
-            
-            // Сбрасываем фокус с UI элементов
             if (EventSystem.current != null)
             {
                 EventSystem.current.SetSelectedGameObject(null);
             }
-            
-            // Блокируем курсор и делаем его невидимым
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
-            
-            // Уничтожаем UI элемент
             Destroy(gameObject);
         }
     }
 
     private void OnDestroy()
     {
-        // Сбрасываем выбор при уничтожении UI
         isSelected = false;
-        
-        if (companion != null)
+        if (companionHealthSystem != null)
         {
-            companion.OnHealthChanged.RemoveListener(UpdateHealth);
+            companionHealthSystem.OnHealthChanged.RemoveListener(UpdateHealth);
         }
-        
-        // Дополнительная проверка для сброса курсора
         if (EventSystem.current != null)
         {
             EventSystem.current.SetSelectedGameObject(null);
         }
     }
-} 
+}
