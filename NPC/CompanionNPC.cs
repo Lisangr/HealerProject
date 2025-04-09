@@ -294,6 +294,16 @@ public class CompanionNPC : MonoBehaviour
             Die();
         }
     }
+    public void Heal(int amount)
+    {
+        if (currentHealth <= 0)
+            return;
+
+        currentHealth = Mathf.Min(_npcData.maxHealth, currentHealth + amount);
+        // Обновляем UI через событие
+        OnHealthChanged?.Invoke(currentHealth);
+        Debug.Log($"{_npcData.npcName} восстановил {amount} здоровья, текущее здоровье: {currentHealth}");
+    }
 
     private void Die()
     {

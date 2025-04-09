@@ -202,13 +202,25 @@ public class Spell : MonoBehaviour
             }
         }
     }
-
     private void ApplyHealthEffect(HealthSystem healthSystem)
     {
         if (spellData.isHealing)
         {
-            healthSystem.Heal((int)spellData.power);
-            Debug.Log($"Исцеление {spellData.power} здоровья применено к {healthSystem.gameObject.name}");
+            if (healthSystem != null)
+            {
+                healthSystem.Heal((int)spellData.power);
+                Debug.Log($"Исцеление {spellData.power} здоровья применено к {healthSystem.gameObject.name}");
+            }
+            else
+            {
+                // Если HealthSystem не найден, пробуем получить CompanionNPC
+                CompanionNPC companion = caster.GetComponent<CompanionNPC>();
+                if (companion != null)
+                {
+                    companion.Heal((int)spellData.power);
+                    Debug.Log($"(Fallback) Исцеление {spellData.power} здоровья применено к {companion.gameObject.name}");
+                }
+            }
         }
         else if (spellData.power > 0)
         {

@@ -26,27 +26,48 @@ public class CompanionUI : MonoBehaviour, IPointerClickHandler
     private bool isSelected = false;
     public void Initialize(CompanionNPC companionNPC)
     {
+        // Сохраняем ссылку на компаньона
         companion = companionNPC;
-        maxHealth = companionNPC.GetMaxHealth();
 
-        // Убедитесь, что UI обновляется при изменении здоровья
+        // Пытаемся получить компонент HealthSystem с объекта компаньона
+        HealthSystem healthSystem = companion.GetComponent<HealthSystem>();
+        if (healthSystem != null)
+        {
+            // Подписываемся на событие обновления здоровья
+            healthSystem.OnHealthChanged.AddListener(UpdateHealth);
+
+            // Устанавливаем максимальное здоровье для UI
+            maxHealth = healthSystem.GetMaxHealth();
+
+            // Обновляем UI начальными данными здоровья
+            UpdateHealth(healthSystem.GetCurrentHealth());
+        }
+        else
+        {
+            Debug.LogWarning("HealthSystem не найден на объекте компаньона " + companionNPC.gameObject.name);
+        }
+
+        // Обновляем текст с именем компаньона, если компонент Text задан
+        if (nameText != null)
+        {
+            nameText.text = companionNPC.GetNPCName();
+        }
+
+        // Инициализируем визуализацию полоски здоровья
         if (healthBarFill != null)
         {
             healthBarFill.fillAmount = 1f;
             healthBarGradient = healthBarFill.GetComponent<UIGradient>();
             if (healthBarGradient == null)
+            {
                 healthBarGradient = healthBarFill.gameObject.AddComponent<UIGradient>();
+            }
 
+            // Устанавливаем начальные цвета для градиента
             currentTopColor = fullHealthColorTop;
             currentBottomColor = fullHealthColorBottom;
             healthBarGradient.SetColors(currentTopColor, currentBottomColor);
         }
-
-        // Подписываемся на событие изменения здоровья
-        companion.OnHealthChanged.AddListener(UpdateHealth);
-
-        // Обновляем текст здоровья
-        UpdateHealthText(maxHealth);
     }
 
     public void UpdateHealth(int currentHealth)
