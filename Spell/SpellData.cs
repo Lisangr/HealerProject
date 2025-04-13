@@ -14,6 +14,7 @@ public class SpellData
     public float cooldown = 5f; // Время перезарядки
     public float castTime = 1f; // Время произнесения
     public float range = 10f; // Дальность действия
+    public float aoeRadius = 3f;
 
     [Header("Визуальные эффекты")]
     public GameObject castVFXPrefab; // Эффект при произнесении

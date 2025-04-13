@@ -29,23 +29,19 @@ public class HealthSystem : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log($"HealthSystem на {gameObject.name}: Awake");
         InitializeHealth();
     }
 
     private void OnEnable()
     {
-        Debug.Log($"HealthSystem на {gameObject.name}: OnEnable");
         if (OnDeath == null)
         {
             OnDeath = new UnityEvent();
-            Debug.Log($"HealthSystem на {gameObject.name}: OnDeath инициализирован");
         }
     }
 
     private void OnDisable()
     {
-        Debug.Log($"HealthSystem на {gameObject.name}: OnDisable");
         OnDeath.RemoveAllListeners();
     }
 
@@ -59,10 +55,6 @@ public class HealthSystem : MonoBehaviour
                     PlayerData playerData = playerConfig.players[0]; // Предполагаем, что используется первый игрок
                     maxHealth = playerData.health;
                 }
-                else
-                {
-                    Debug.LogError($"HealthSystem на {gameObject.name}: не задан PlayerConfig или нет данных игрока!");
-                }
                 break;
 
             case EntityType.Enemy:
@@ -74,14 +66,6 @@ public class HealthSystem : MonoBehaviour
                     {
                         maxHealth = enemyData.health;
                     }
-                    else
-                    {
-                        Debug.LogError($"HealthSystem на {gameObject.name}: не найдены данные врага в EnemyConfig!");
-                    }
-                }
-                else
-                {
-                    Debug.LogError($"HealthSystem на {gameObject.name}: не задан EnemyConfig!");
                 }
                 break;
 
@@ -96,21 +80,9 @@ public class HealthSystem : MonoBehaviour
                         if (npcData != null)
                         {
                             maxHealth = npcData.maxHealth;
-                        }
-                        else
-                        {
-                            Debug.LogError($"HealthSystem на {gameObject.name}: не найдены данные NPC с ID {npcID} в NPCConfig!");
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogError($"HealthSystem на {gameObject.name}: не найден компонент CompanionNPC!");
-                    }
-                }
-                else
-                {
-                    Debug.LogError($"HealthSystem на {gameObject.name}: не задан NPCConfig!");
-                }
+                        }                       
+                    }                   
+                }                
                 break;
         }
 
@@ -122,18 +94,13 @@ public class HealthSystem : MonoBehaviour
     {
         if (currentHealth <= 0)
         {
-            Debug.Log($"HealthSystem на {gameObject.name}: попытка нанести урон мертвому существу");
             return;
         }
 
-        Debug.Log($"HealthSystem на {gameObject.name}: получение урона {damage}. Текущее здоровье: {currentHealth}");
         currentHealth = Mathf.Max(0, currentHealth - damage);
         OnHealthChanged?.Invoke(currentHealth);
-        Debug.Log($"HealthSystem на {gameObject.name}: после получения урона здоровье: {currentHealth}/{maxHealth}");
-
         if (currentHealth <= 0)
         {
-            Debug.Log($"HealthSystem на {gameObject.name}: здоровье достигло 0, вызываем смерть");
             Die();
         }
     }
@@ -147,9 +114,7 @@ public class HealthSystem : MonoBehaviour
 
     private void Die()
     {
-        Debug.Log($"HealthSystem на {gameObject.name}: вызов события смерти");
         OnDeath?.Invoke();
-        Debug.Log($"HealthSystem на {gameObject.name}: событие смерти вызвано");
     }
 
     public int GetCurrentHealth()
@@ -171,7 +136,6 @@ public class HealthSystem : MonoBehaviour
     {
         if (newMaxHealth < 0)
         {
-            Debug.LogWarning("Попытка установить отрицательное максимальное здоровье");
             return;
         }
         
@@ -184,7 +148,6 @@ public class HealthSystem : MonoBehaviour
     {
         if (newCurrentHealth < 0)
         {
-            Debug.LogWarning("Попытка установить отрицательное текущее здоровье");
             return;
         }
         
@@ -205,12 +168,10 @@ public class HealthSystem : MonoBehaviour
     public void SetEntityType(EntityType type)
     {
         entityType = type;
-        Debug.Log($"HealthSystem на {gameObject.name}: установлен тип существа {type}");
     }
 
     public void SetEnemyConfig(EnemyConfig config)
     {
         enemyConfig = config;
-        Debug.Log($"HealthSystem на {gameObject.name}: установлен EnemyConfig");
     }
 } 

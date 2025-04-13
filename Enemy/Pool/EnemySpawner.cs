@@ -5,43 +5,41 @@ using System.Collections.Generic;
 [System.Serializable]
 public class EnemySpawnSettings
 {
-    public Enemy enemyPrefab;         // ������ �����, ��� �� ������ � ����
-    public int maxEnemies = 1;        // ������������ ����� �������� ������ ������� ����
-    public Transform[] spawnPoints;   // �����, ��� ����� ������������ ����
+    public Enemy enemyPrefab;         // Префаб врага, который будет появляться
+    public int maxEnemies = 1;        // Максимальное количество одновременно активных врагов
+    public Transform[] spawnPoints;   // Точки, в которых будут появляться враги
 
-    [Tooltip("����������� ����� �� ������ ����� ��������")]
+    [Tooltip("Задержка между спавнами врагов после первого спавна")]
     public float spawnDelayMin = 10f;
 
-    [Tooltip("������������ ����� �� ������ (���� �������� ������ ������������, ���������� ��������� �����)")]
+    [Tooltip("Максимальная задержка между спавнами врагов после первого спавна (для рандома)")]
     public float spawnDelayMax = 10f;
 
-    [Tooltip("����������� ����� �� ������� ������")]
+    [Tooltip("Начальная задержка перед первым спавном врагов")]
     public float initialSpawnDelayMin = 1f;
 
-    [Tooltip("������������ ����� �� ������� ������")]
+    [Tooltip("Максимальная начальная задержка перед первым спавном врагов")]
     public float initialSpawnDelayMax = 2f;
 }
 
 public class EnemySpawner : MonoBehaviour
 {
     [SerializeField] private List<EnemySpawnSettings> enemySpawnSettings;
-    [SerializeField] private float globalCheckInterval = 1f; // �������� �������� (��������, 1 �������)
+    [SerializeField] private float globalCheckInterval = 1f; // Интервал глобальной проверки (например, 1 секунда)
 
-    // ������� ��� �������� � ������� ��������� �������� ��� ������� ���� �����
+    // Таймеры для каждого типа врага
     private float[] spawnTimers;
     private float[] currentSpawnDelays;
-    // ����, �����������, ��� ������ ����� ��� ��������� ��� ������� ����
+    // Флаги, обозначающие, что враг уже был заспавнен хотя бы один раз
     private bool[] hasSpawnedOnce;
 
     private void Start()
     {
-        // �������������� �������, ������ ������� ����� ���������� ��������
         int count = enemySpawnSettings.Count;
         spawnTimers = new float[count];
         currentSpawnDelays = new float[count];
         hasSpawnedOnce = new bool[count];
 
-        // ������������� ��� ������� ���� ����� ��������� �������� ������
         for (int i = 0; i < count; i++)
         {
             currentSpawnDelays[i] = Random.Range(enemySpawnSettings[i].initialSpawnDelayMin, enemySpawnSettings[i].initialSpawnDelayMax);
@@ -66,30 +64,31 @@ public class EnemySpawner : MonoBehaviour
                     {
                         if (settings.spawnPoints != null && settings.spawnPoints.Length > 0)
                         {
-                            Transform spawnPoint = settings.spawnPoints[Random.Range(0, settings.spawnPoints.Length)];
-                            SpawnEnemyAt(spawnPoint, settings.enemyPrefab);
+                            // Выбираем случайную точку из массива
+                            int index = Random.Range(0, settings.spawnPoints.Length);
+                            Transform spawnPoint = settings.spawnPoints[index];
+
+                            // Проверка, что выбранная точка не равна null
+                            if (spawnPoint == null)
+                            {
+                                Debug.LogError($"SpawnPoint под индексом {index} для префаба {settings.enemyPrefab.name} равен null!");
+                            }
+                            else
+                            {
+                                SpawnEnemyAt(spawnPoint, settings.enemyPrefab);
+                            }
                         }
-                        else
-                        {
-                            Debug.LogWarning($"�� ������ ����� ������ ��� ����� {settings.enemyPrefab.name}");
-                        }
-                        // ���������� ������ ��� ����� ����
+
+                        // Сброс таймера спавна
                         spawnTimers[i] = 0f;
-                        // ���� ������ ����� ��� ��������� � ���������� ������� ��������, ����� ���������� ������������ ���������
-                        if (!hasSpawnedOnce[i])
-                        {
-                            hasSpawnedOnce[i] = true;
-                            currentSpawnDelays[i] = Random.Range(settings.spawnDelayMin, settings.spawnDelayMax);
-                        }
-                        else
-                        {
-                            currentSpawnDelays[i] = Random.Range(settings.spawnDelayMin, settings.spawnDelayMax);
-                        }
+                        // Обновление задержки спавна (для первого спавна или последующих)
+                        currentSpawnDelays[i] = Random.Range(settings.spawnDelayMin, settings.spawnDelayMax);
+                        hasSpawnedOnce[i] = true;
                     }
                 }
                 else
                 {
-                    // ���� ����� �������� ������ �������� ���������, ���������� ������
+                    // Если количество активных врагов превышает maxEnemies — сбрасываем таймер
                     spawnTimers[i] = 0f;
                 }
             }
@@ -102,43 +101,38 @@ public class EnemySpawner : MonoBehaviour
         EnemyPool pool = FindObjectOfType<EnemyPool>();
         if (pool == null)
         {
-            Debug.LogError("EnemyPool не найден на сцене!");
             return;
         }
 
         Enemy enemy = pool.GetEnemy(enemyPrefab);
         if (enemy == null)
         {
-            Debug.LogError($"Не удалось получить врага из пула для префаба {enemyPrefab.name}");
             return;
         }
 
-        // Устанавливаем позицию и поворот
+        // Устанавливаем позицию и поворот на основе spawnPoint
         enemy.transform.position = spawnPoint.position;
         enemy.transform.rotation = spawnPoint.rotation;
-        
+
         // Активируем объект
         enemy.gameObject.SetActive(true);
-        
-        // Инициализируем врага
+
+        // Инициализируем систему здоровья (если есть)
         var healthSystem = enemy.GetComponent<HealthSystem>();
         if (healthSystem != null)
         {
             healthSystem.RefreshFromConfig();
         }
 
-        // Сбрасываем состояние врага
+        // Сбрасываем физическое состояние (скорость и вращение)
         var rb = enemy.GetComponent<Rigidbody>();
         if (rb != null)
         {
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
-
-        Debug.Log($"Создан враг {enemy.name} в позиции {spawnPoint.position}");
     }
 
-    //       (   OriginalPrefab)
     private int CountActiveEnemies(Enemy enemyPrefab)
     {
         int count = 0;
