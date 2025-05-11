@@ -1,16 +1,13 @@
 using UnityEngine;
 using System.Linq;
 using System.Collections;
-using System.Collections.Generic;
 
 public class Enemy : MonoBehaviour
 {
-    [Header("��������� �����")]
-    public string enemyName; // ������������ ������������� �� ����� �������
-    public EnemyConfig enemyConfig;           // ������ �� ����� ������� ������
-        // ����� ���� ��� �������� ������� �������
+    [Header("Main Info")]
+    public string enemyName;
+    public EnemyConfig enemyConfig;         
     public int prefabIndex;
-    // ������ �� ���������� �������� (������ ���������)
     public PlayerAnimationController animationController;
 
     private EnemyData _enemyData;
@@ -22,13 +19,11 @@ public class Enemy : MonoBehaviour
     private float waitTimer = 0f;
     private float waitDuration = 0f;
 
-    // ���� ��� ��������������
-    private Vector3 _spawnPosition; // �������� ����� ������
+    private Vector3 _spawnPosition; 
     [SerializeField] private float patrolRadius = 10f;
     private bool isMovingToRandomPoint;
     private Vector3 randomPoint;
 
-    // ���� ��� ��������������� ����������� (��������, ��������� ������ ��� ������)
     private bool hasForcedDestination = false;
     private Vector3 forcedDestination;
 
@@ -60,14 +55,12 @@ public class Enemy : MonoBehaviour
         // Проверяем наличие конфига
         if (enemyConfig == null)
         {
-            Debug.LogError($"Враг {gameObject.name}: enemyConfig не задан!");
             return;
         }
         
         _enemyData = enemyConfig.enemies.FirstOrDefault(e => e.enemyName == enemyName);
         if (_enemyData == null)
         {
-            Debug.LogError($"Враг {enemyName} не найден в конфиге!");
             return;
         }
 
@@ -78,7 +71,6 @@ public class Enemy : MonoBehaviour
             if (healthSystem == null)
             {
                 healthSystem = gameObject.AddComponent<HealthSystem>();
-                Debug.Log($"Враг {gameObject.name}: Автоматически добавлен компонент HealthSystem");
             }
         }
 
@@ -92,34 +84,23 @@ public class Enemy : MonoBehaviour
             healthSystemComponent.SetEnemyConfig(enemyConfig);
             // Обновляем здоровье из конфига
             healthSystemComponent.RefreshFromConfig();
-            Debug.Log($"Враг {gameObject.name}: HealthSystem настроен. Максимальное здоровье: {healthSystem.GetMaxHealth()}");
         }
 
         // Подписываемся на событие смерти
         if (healthSystem != null)
         {
-            Debug.Log($"Враг {gameObject.name}: Подписываемся на событие смерти");
             healthSystem.OnDeath.AddListener(OnHealthSystemDeath);
-            Debug.Log($"Враг {gameObject.name}: Подписка на событие смерти завершена");
-        }
-        else
-        {
-            Debug.LogError($"Враг {gameObject.name}: Не удалось подписаться на событие смерти - healthSystem = null");
         }
 
         // Находим игрока на сцене
         Player player = FindObjectOfType<Player>();
         if (player != null)
-            playerTransform = player.transform;
-        else
-            Debug.LogWarning($"Враг {gameObject.name}: Player не найден на сцене");
+            playerTransform = player.transform;      
 
         // Находим пул врагов
         if (_enemyPool == null)
         {
-            _enemyPool = FindObjectOfType<EnemyPool>();
-            if (_enemyPool == null)
-                Debug.LogWarning($"Враг {gameObject.name}: EnemyPool не найден на сцене");
+            _enemyPool = FindObjectOfType<EnemyPool>();           
         }
 
         // Сохраняем исходную позицию для патрулирования
@@ -129,10 +110,6 @@ public class Enemy : MonoBehaviour
         if (animationController == null)
         {
             animationController = GetComponent<PlayerAnimationController>();
-            if (animationController == null)
-            {
-                Debug.LogError($"Враг {gameObject.name}: PlayerAnimationController не найден!");
-            }
         }
     }
     #endregion
@@ -290,8 +267,6 @@ public class Enemy : MonoBehaviour
     }
     private void ExecuteTamedBehavior()
     {
-        // ���� ��������� ���� ����� �������� � ����� "Enemy",
-        // ��� ���� ���������� �������, ������� ��� "Player" ��� "Ally"
         GameObject[] enemyTargets = GameObject.FindGameObjectsWithTag("Enemy");
         Enemy tameTarget = null;
         float minDist = Mathf.Infinity;
@@ -310,14 +285,12 @@ public class Enemy : MonoBehaviour
 
         if (tameTarget != null)
         {
-            // �������������� � ������� ����
             Vector3 direction = (tameTarget.transform.position - transform.position).normalized;
             if (direction != Vector3.zero)
             {
                 transform.rotation = Quaternion.LookRotation(direction);
             }
 
-            // ���� �� � �������� ����� � ��������� � ����
             if (Vector3.Distance(transform.position, tameTarget.transform.position) > _enemyData.attackRange)
             {
                 float step = _enemyData.moveSpeed * Time.deltaTime;
@@ -326,7 +299,6 @@ public class Enemy : MonoBehaviour
             }
             else
             {
-                // ���� ����� ����� ������� � ������� ����
                 if (attackTimer <= 0f)
                 {
                     animationController.PlayAnimation(animationController.animationStates.Attack1);
@@ -348,33 +320,26 @@ public class Enemy : MonoBehaviour
         
         if (_enemyData == null)
         {
-            Debug.LogWarning($"Враг {gameObject.name}: попытка нанести урон с _enemyData = null");
             return;
         }
 
         if (healthSystem == null)
         {
-            Debug.LogError($"Враг {gameObject.name}: healthSystem не инициализирован!");
             return;
         }
         
         if (damage < 0)
         {
-            Debug.LogWarning($"Враг {gameObject.name}: получен отрицательный урон ({damage})");
             damage = 0;
         }
 
-        Debug.Log($"Враг {gameObject.name}: получает урон {damage}");
         healthSystem.TakeDamage(damage);
-        Debug.Log($"Враг {gameObject.name}: получил урон {damage}, оставшееся здоровье: {healthSystem.GetCurrentHealth()}/{healthSystem.GetMaxHealth()}");
     }
 
     private void OnHealthSystemDeath()
     {
         if (isDead) return;
         isDead = true;
-
-        Debug.Log($"Враг {gameObject.name} умер через HealthSystem");
 
         // Отключаем коллайдеры
         var colliders = GetComponents<Collider>();
@@ -401,25 +366,21 @@ public class Enemy : MonoBehaviour
         if (OnEnemyDeath != null)
         {
             OnEnemyDeath(_enemyData.experience);
-            Debug.Log($"Вызвано событие OnEnemyDeath с {_enemyData.experience} опытом");
         }
 
         if (OnEnemyDeathWithPosition != null)
         {
             OnEnemyDeathWithPosition(transform.position);
-            Debug.Log($"Вызвано событие OnEnemyDeathWithPosition с позицией {transform.position}");
         }
 
         if (OnEnemyDestroy != null)
         {
             OnEnemyDestroy();
-            Debug.Log("Вызвано событие OnEnemyDestroy");
         }
 
         if (OnEnemyKilled != null)
         {
             OnEnemyKilled(enemyName);
-            Debug.Log($"Вызвано событие OnEnemyKilled для врага {enemyName}");
         }
 
         // Возвращаем врага в пул через некоторое время
@@ -442,7 +403,6 @@ public class Enemy : MonoBehaviour
 
     private void OnEnable()
     {
-        Debug.Log($"Враг {gameObject.name}: OnEnable");
         OnEnemyDeathWithPosition += OnDeathWithPosition;
         _spawnPosition = transform.position;
         
@@ -468,7 +428,6 @@ public class Enemy : MonoBehaviour
         // Проверяем подписку на событие смерти
         if (healthSystem != null && !healthSystem.OnDeath.GetPersistentEventCount().Equals(1))
         {
-            Debug.Log($"Враг {gameObject.name}: Переподписываемся на событие смерти");
             healthSystem.OnDeath.RemoveListener(OnHealthSystemDeath);
             healthSystem.OnDeath.AddListener(OnHealthSystemDeath);
         }
@@ -476,18 +435,15 @@ public class Enemy : MonoBehaviour
 
     private void OnDisable()
     {
-        Debug.Log($"Враг {gameObject.name}: OnDisable");
         OnEnemyDeathWithPosition -= OnDeathWithPosition;
         
         // Отписываемся от события смерти
         if (healthSystem != null)
         {
-            Debug.Log($"Враг {gameObject.name}: Отписываемся от события смерти");
             healthSystem.OnDeath.RemoveListener(OnHealthSystemDeath);
         }
     }
-
-    //  :          
+      
     public static void OnDeathWithPosition(Vector3 playerPosition)
     {
         Collider[] nearbyEnemies = Physics.OverlapSphere(playerPosition, 30f);
@@ -520,7 +476,6 @@ public class Enemy : MonoBehaviour
                 }
                 
                 player.TakeDamage(_enemyData.damage);
-                Debug.Log($"Враг {gameObject.name} нанес урон игроку: {_enemyData.damage}");
                 return; // Если нашли игрока, наносим урон только ему
             }
 
@@ -537,7 +492,6 @@ public class Enemy : MonoBehaviour
                 }
                 
                 companion.TakeDamage(_enemyData.damage);
-                Debug.Log($"Враг {gameObject.name} нанес урон компаньону: {_enemyData.damage}");
                 return; // Если нашли компаньона, наносим урон только ему
             }
         }
@@ -553,14 +507,10 @@ public class Enemy : MonoBehaviour
     }
     public void Tame(float duration)
     {
-        if (isTamed) return; //   ,   
+        if (isTamed) return; 
         isTamed = true;
 
-        //       (,  "Ally")
         gameObject.tag = "Ally";
-
-        //       ,    
-        Debug.Log($"{name}    .");
         StartCoroutine(UntameAfterDuration(duration));
     }
 
@@ -569,10 +519,7 @@ public class Enemy : MonoBehaviour
         yield return new WaitForSeconds(duration);
         isTamed = false;
 
-        //    (, "Enemy")
         gameObject.tag = "Enemy";
-
-        Debug.Log($"{name}   .");
     }
 
     private void OnDestroy()

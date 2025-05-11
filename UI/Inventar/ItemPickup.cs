@@ -10,10 +10,7 @@ public class ItemPickup : MonoBehaviour
     [HideInInspector] public string uniqueID;
     public static Dictionary<string, int> itemInventory = new Dictionary<string, int>(); // Словарь для хранения предметов
     private InventoryUI inventoryUIManager;
-    private void Awake()
-    {
-        
-    }
+
     private void Start()
     {
         inventoryUIManager = FindObjectOfType<InventoryUI>(); // Находим InventoryUIManager

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(PlayerAnimationController))]
@@ -16,6 +17,23 @@ public class PlayerMovement : MonoBehaviour
     public float rotationSpeed = 10f;
     public float speedMultiplier = 1.8f;
 
+    [Header("Stamina (¬ыносливость) Settings for Sprint")]
+    // ћаксимальное значение выносливости; можно установить значение из PlayerData
+    [SerializeField] private float maxStamina;
+    // “екущее значение выносливости
+    [SerializeField] private float currentStamina;
+    // —тоимость ускорени€: расход выносливости за секунду при спринте
+    public float sprintStaminaCostRate = 0.5f;
+    // —корость восстановлени€ выносливости (единиц в секунду) когда спринт не активен
+    public float staminaRegenerationRate = 1f;
+
+    [Header("Stamina UI")]
+    // —сылка на UI-элемент полоски выносливости (аналогично healthBar)
+    public Image staminaBar;
+    // —сылка на текстовое поле дл€ отображени€ значений выносливости
+    public Text staminaText;
+
+
     [Header("References")]
     [SerializeField] private Transform groundCheck;
     [SerializeField] private Camera playerCamera;
@@ -25,6 +43,8 @@ public class PlayerMovement : MonoBehaviour
     private bool isGrounded;
     private Vector3 movementInput;
     private PlayerAnimationController animationController;
+    private const string StaminaKey = "PlayerStamina";
+
     public float CurrentSpeed
     {
         get
@@ -42,6 +62,9 @@ public class PlayerMovement : MonoBehaviour
 
         if (playerCamera == null)
             playerCamera = Camera.main;
+
+        maxStamina = PlayerPrefs.GetInt(StaminaKey, 15);
+        currentStamina = PlayerPrefs.GetInt(StaminaKey);
     }
 
     private void Update()
@@ -55,6 +78,9 @@ public class PlayerMovement : MonoBehaviour
         GroundCheck();
         ProcessInput();
         HandleJump();
+
+        // ќбновление UI выносливости каждый кадр
+        UpdateStaminaUI();
     }
 
     private void FixedUpdate()
@@ -72,23 +98,45 @@ public class PlayerMovement : MonoBehaviour
         if (isGrounded)
             jumpsRemaining = maxJumps;
     }
-
     private void ProcessInput()
     {
-        bool isRunning = InputUtils.GetKey(InputSettings.Instance.RunModifierKey);
-        speedMultiplier = isRunning ? 1.8f : 1f;
-
-        float horizontal = 0f;
-        float vertical = 0f;
+        // ѕолучаем базовый ввод без учета ускорени€
+        float baseHorizontal = 0f;
+        float baseVertical = 0f;
         if (InputUtils.GetKey(InputSettings.Instance.MoveRightKey))
-            horizontal += moveSpeedH * speedMultiplier;
+            baseHorizontal += moveSpeedH;
         if (InputUtils.GetKey(InputSettings.Instance.MoveLeftKey))
-            horizontal -= moveSpeedH * speedMultiplier;
+            baseHorizontal -= moveSpeedH;
         if (InputUtils.GetKey(InputSettings.Instance.MoveForwardKey))
-            vertical += moveSpeedV * speedMultiplier;
+            baseVertical += moveSpeedV;
         if (InputUtils.GetKey(InputSettings.Instance.MoveBackwardKey))
-            vertical -= moveSpeedV * speedMultiplier;
+            baseVertical -= moveSpeedV;
 
+        // ќпредел€ем, включен ли спринт
+        bool runKeyPressed = InputUtils.GetKey(InputSettings.Instance.RunModifierKey);
+        if (runKeyPressed && currentStamina >= 1f)
+        {
+            // ≈сли спринт активен, устанавливаем множитель дл€ ускорени€ и расходуем выносливость
+            speedMultiplier = 1.8f;
+            currentStamina -= sprintStaminaCostRate * Time.deltaTime;
+            currentStamina = Mathf.Max(currentStamina, 0f);
+        }
+        else
+        {
+            // ≈сли спринт не активен или выносливость ниже 1, сбрасываем множитель и восстанавливаем выносливость
+            speedMultiplier = 1f;
+            if (currentStamina < maxStamina)
+            {
+                currentStamina += staminaRegenerationRate * Time.deltaTime;
+                currentStamina = Mathf.Min(currentStamina, maxStamina);
+            }
+        }
+
+        // ѕримен€ем множитель к базовому вводу
+        float horizontal = baseHorizontal * speedMultiplier;
+        float vertical = baseVertical * speedMultiplier;
+
+        // –ассчитываем направление движени€ с учетом направлени€ камеры
         Vector3 cameraForward = playerCamera.transform.forward;
         Vector3 cameraRight = playerCamera.transform.right;
         cameraForward.y = 0;
@@ -98,7 +146,7 @@ public class PlayerMovement : MonoBehaviour
 
         movementInput = cameraRight * horizontal + cameraForward * vertical;
 
-        // ќбновление анимаций (без плавани€)
+        // ќбновление анимаций движени€
         UpdateAnimations(horizontal, vertical);
     }
 
@@ -179,6 +227,20 @@ public class PlayerMovement : MonoBehaviour
     {
         if (!isGrounded)
             rb.velocity += Vector3.up * Physics.gravity.y * Time.fixedDeltaTime;
+    }
+
+    private void UpdateStaminaUI()
+    {
+        // ќбновл€ем значение полоски выносливости
+        if (staminaBar != null)
+        {
+            staminaBar.fillAmount = currentStamina / maxStamina;
+        }
+        // ќбновл€ем текстовое поле (округл€ем до целого числа)
+        if (staminaText != null)
+        {
+            staminaText.text = Mathf.RoundToInt(currentStamina) + " / " + Mathf.RoundToInt(maxStamina);
+        }
     }
 
     private void OnDrawGizmosSelected()

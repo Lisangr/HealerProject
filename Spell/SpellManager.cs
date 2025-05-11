@@ -80,29 +80,32 @@ public class SpellManager : MonoBehaviour
         Spell spell = spellSlots[slotIndex];
         if (spell != null && spell.IsReady())
         {
-            // Получаем позицию под курсором мыши
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
+            GameObject target = null;
 
-            // Сначала проверяем, есть ли цель под курсором
-            if (Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity))
             {
-                GameObject target = hit.collider.gameObject;
-                if (spell.CanCast(target))
+                target = hit.collider.gameObject;
+
+                // Особенная обработка для врагов
+                if (target.CompareTag("Enemy"))
                 {
-                    spell.Cast(target);
-                    return;
+                    if (spell.CanCast(target))
+                    {
+                        spell.Cast(target);
+                        return;
+                    }
                 }
             }
 
-            // Если не нашли цель с коллайдером, пробуем применить заклинание на себя
+            // Если не нашли врага, пробуем применить на игрока
             if (spell.CanCast(player))
             {
                 spell.Cast(player);
             }
         }
     }
-
     // Назначить заклинание в слот
     public void AssignSpell(string spellID, int slotIndex)
     {

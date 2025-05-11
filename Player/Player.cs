@@ -107,7 +107,6 @@ public class Player : MonoBehaviour
             healthSystem.SetMaxHealth(baseHealth + staminaBonus);
             healthSystem.SetCurrentHealth(healthSystem.GetMaxHealth());
             UpdateHealthDisplay();
-            Debug.Log($"Применен бонус здоровья: +{staminaBonus} от выносливости");
         }
 
         if (damageImage != null)
@@ -135,7 +134,6 @@ public class Player : MonoBehaviour
         }
         if (EventSystem.current.IsPointerOverGameObject())
         {
-            // ������ ��� UI � ����� �� ������������ ������� ����
             return;
         }
 
@@ -167,7 +165,6 @@ public class Player : MonoBehaviour
     private bool isAttacking = false;
     private void HandleAttackInput()
     {
-        //     .
         if (movement != null && movement.CurrentSpeed > 1f)
             return;
 
@@ -233,16 +230,12 @@ public class Player : MonoBehaviour
             stateInfo = animationController.animator.GetCurrentAnimatorStateInfo(0);
         }
     }    
-    // ����� �������� ��� (��������)
     private Enemy FindNearestTarget()
     {
         float detectionRange = currentPlayerData.attackRange;
         int enemyLayerMask = LayerMask.GetMask("Enemy");
         
-        Debug.Log($"Поиск цели: дальность {detectionRange}, маска слоя: {enemyLayerMask}");
-        
         Collider[] enemyColliders = Physics.OverlapSphere(transform.position, detectionRange, enemyLayerMask);
-        Debug.Log($"Найдено потенциальных целей: {enemyColliders.Length}");
         
         Enemy nearestEnemy = null;
         float minDistance = Mathf.Infinity;
@@ -252,26 +245,14 @@ public class Player : MonoBehaviour
             Enemy enemy = col.GetComponent<Enemy>();
             if (enemy != null)
             {
-                float distance = Vector3.Distance(transform.position, enemy.transform.position);
-                Debug.Log($"Проверка врага {enemy.name}: дистанция {distance}");
+                float distance = Vector3.Distance(transform.position, enemy.transform.position);              
                 if (distance < minDistance)
                 {
                     minDistance = distance;
                     nearestEnemy = enemy;
-                    Debug.Log($"Новая ближайшая цель: {enemy.name} на дистанции {distance}");
                 }
             }
-        }
-        
-        if (nearestEnemy == null)
-        {
-            Debug.Log("Цель не найдена в радиусе атаки");
-        }
-        else
-        {
-            Debug.Log($"Выбрана цель: {nearestEnemy.name} на дистанции {minDistance}");
-        }
-        
+        }    
         return nearestEnemy;
     }
 
@@ -283,21 +264,16 @@ public class Player : MonoBehaviour
 
         // Находим ближайшую цель
         Enemy targetEnemy = FindNearestTarget();
-        Debug.Log($"Дальняя атака: найдена цель: {(targetEnemy != null ? targetEnemy.name : "null")}");
         currentTarget = targetEnemy; // Сохраняем текущую цель
 
         if (targetEnemy != null)
         {
-            Debug.Log($"Дальняя атака: Наносим урон {currentPlayerData.attack} врагу {targetEnemy.name}");
-            //    �����
             Vector3 directionToEnemy = (targetEnemy.transform.position - transform.position).normalized;
-            directionToEnemy.y = 0; // ������� �������� �� ���������, ����� ����� �� ����������
+            directionToEnemy.y = 0; 
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(directionToEnemy), 0.1f);
 
-            // ������������ ���������������� ����� ��� ����������� �������
             StartCoroutine(HighlightEnemy(targetEnemy));
 
-            // ������� VFX-������, ������� ��������� ������������ � ������� ����
             Vector3 spawnPos = attackVFXSpawnPoint.position;
             Vector3 direction = (targetEnemy.transform.position - spawnPos).normalized;
 
@@ -315,43 +291,29 @@ public class Player : MonoBehaviour
             projectile.transform.position = spawnPos;
             projectile.transform.rotation = Quaternion.LookRotation(direction);
 
-            // ������� ������� ���������������� �����
             projectile.SetTarget(targetEnemy);
 
-            // ������� ���� ��������������� ���� (���� ����� �����, ����� ������ ��������� ����)
             targetEnemy.TakeDamage(currentPlayerData.attack);
-            Debug.Log($"Дальняя атака: Урон нанесен");
         }
-        else
-        {
-            Debug.Log("��������� ���� �� �������. ������� �����.");
-            // ���� ���� ��� � ����� ����������� �������� ����� ��� ������� ����������
-        }
-
-        // ����������� ���� ����� ������
+       
         if (rangedAttackAudioSource != null && arrowFlightClip != null)
             rangedAttackAudioSource.PlayOneShot(arrowFlightClip);
     }
-    /// <summary>
-    /// �������� ������������ �����, ������� ���� ��� ���������.
-    /// </summary>
+
     private IEnumerator HighlightEnemy(Enemy enemy)
     {
         Renderer enemyRenderer = enemy.GetComponentInChildren<Renderer>();
         if (enemyRenderer != null)
         {
-            // ������ ������� ���������, ����� �� ������ �������� (���� �� ������, Unity ������������� ���������)
             Material mat = enemyRenderer.material;
             Color originalColor = mat.color;
-            mat.color = Color.yellow; // ���� ���������
+            mat.color = Color.yellow; 
             yield return new WaitForSeconds(0.2f);
             mat.color = originalColor;
         }
     }
-    // ����� �������� ���
     private void MeleeAttack()
     {
-        Debug.Log("Ближняя атака: Начало атаки");
         // Воспроизведение звука взмаха меча
         if (meleeAttackAudioSource != null && swordSwingClip != null)
             meleeAttackAudioSource.PlayOneShot(swordSwingClip);
@@ -392,22 +354,14 @@ public class Player : MonoBehaviour
 
         if (targetEnemy != null)
         {
-            Debug.Log($"Ближняя атака: Наносим урон {currentPlayerData.attack} врагу {targetEnemy.name}");
             Vector3 direction = (targetEnemy.transform.position - transform.position).normalized;
             direction.y = 0;
             transform.rotation = Quaternion.LookRotation(direction);
-
-            Debug.Log($"Ближняя атака: Наносим урон {currentPlayerData.attack} врагу {targetEnemy.name}");
-            targetEnemy.TakeDamage(currentPlayerData.attack);
-            Debug.Log($"Ближняя атака: Урон нанесен");
-
+ targetEnemy.TakeDamage(currentPlayerData.attack);
+            
             if (meleeHitVFXPrefab != null)
                 Instantiate(meleeHitVFXPrefab, targetEnemy.transform.position, Quaternion.identity);
-        }
-        else
-        {
-            Debug.Log("    melee-.");
-        }
+        }        
     }
 
     private Ray GetAttackRayFromPlayer()
@@ -469,27 +423,16 @@ public class Player : MonoBehaviour
             playerConfig = Resources.Load<PlayerConfig>("PlayerConfig");
             
             if (playerConfig == null)
-            {
-                Debug.LogError("PlayerConfig не назначен и не найден в ресурсах!");
+            {              
                 return;
             }
-            else
-            {
-                Debug.Log("PlayerConfig успешно загружен из ресурсов.");
-            }
+           
         }
 
         if (playerConfig.players.Count > playerIndex && playerIndex >= 0)
         {
             currentPlayerData = playerConfig.players[playerIndex];
-            Debug.Log($"Инициализирован игрок {playerIndex} из конфига. " + 
-                     $"Базовые характеристики: Сила {currentPlayerData.power}, Ловкость {currentPlayerData.dexterity}, " +
-                     $"Выносливость {currentPlayerData.stamina}, Защита {currentPlayerData.defence}, Интеллект {currentPlayerData.intellect}");
-        }
-        else
-        {
-            Debug.LogError($"Нет игрока с индексом {playerIndex} в конфиге!");
-        }
+        }       
     }
 
     public void TakeDamage(int damage)
@@ -534,7 +477,6 @@ public class Player : MonoBehaviour
         int healthToRestore = Mathf.RoundToInt(healthSystem.GetMaxHealth() * percentage);
         healthSystem.Heal(healthToRestore);
         UpdateHealthDisplay();
-        Debug.Log($"Восстановлено {healthToRestore} здоровья ({percentage * 100}% от максимального). Текущее здоровье: {healthSystem.GetCurrentHealth()}");
     }
     public void IncreaseMaxHealthByPercentage(float percentage)
     {
@@ -544,8 +486,6 @@ public class Player : MonoBehaviour
         healthSystem.SetMaxHealth(newMaxHealth);
         healthSystem.Heal(buffAmount);
         UpdateHealthDisplay();
-        
-        Debug.Log($"Увеличено максимальное здоровье на {percentage * 100}% ({buffAmount} ед.). Новое максимальное здоровье: {healthSystem.GetMaxHealth()}");
         
         StartCoroutine(RemoveMaxHealthBuffAfterTime(buffAmount, 60f));
     }
@@ -558,20 +498,17 @@ public class Player : MonoBehaviour
             healthSystem.SetCurrentHealth(healthSystem.GetMaxHealth());
         
         UpdateHealthDisplay();
-        Debug.Log($"Бафф здоровья снят: -{buffAmount} ед. Новое максимальное здоровье: {healthSystem.GetMaxHealth()}");
     }
 
-    //       
     public void RestoreHealthFixed(int healthPoints)
     {
         if (healthSystem.GetCurrentHealth() >= healthSystem.GetMaxHealth()) return;
         
         healthSystem.Heal(healthPoints);
         UpdateHealthDisplay();
-        Debug.Log($"Восстановлено {healthPoints} здоровья. Текущее здоровье: {healthSystem.GetCurrentHealth()}");
+       
     }
 
-    //    
     private IEnumerator RegenerationCoroutine()
     {
         float regenTimer = 0f;
@@ -586,15 +523,10 @@ public class Player : MonoBehaviour
                 
                 healthSystem.Heal(restoreAmount);
                 UpdateHealthDisplay();
-                Debug.Log($"Регенерация здоровья: +{restoreAmount}. Текущее здоровье: {healthSystem.GetCurrentHealth()}/{healthSystem.GetMaxHealth()}");
             }
             else
             {
-                regenTimer = 0f;
-                if (isInCombat)
-                {
-                    Debug.Log($"Регенерация остановлена - игрок в бою. Таймер боя: {combatTimer:F1}");
-                }
+                regenTimer = 0f;                
             }
 
             yield return new WaitForSeconds(1f);
@@ -605,8 +537,7 @@ public class Player : MonoBehaviour
     {
         healthBar.fillAmount = healthSystem.GetHealthPercentage();
         hpText.text = $"{healthSystem.GetCurrentHealth()} / {healthSystem.GetMaxHealth()}";
-        Debug.Log($"Обновление интерфейса здоровья: {healthSystem.GetCurrentHealth()} / {healthSystem.GetMaxHealth()}");
-    }
+           }
     #endregion
 
     #region UpdateStats
@@ -620,8 +551,7 @@ public class Player : MonoBehaviour
         UpdateHealthDisplay();
         
         PlayerPrefs.SetInt(BaseHealthKey, maxHealth);
-        SaveCharacterStats();  // Сохраняем все характеристики, включая stamina
-        Debug.Log($"Обновлено здоровье: {maxHealth} (Выносливость: {currentStamina})");
+        SaveCharacterStats();  // Сохраняем все характеристики, включая stamina        
     }
 
     public void UpdateAttack(int currentPower)
@@ -631,8 +561,7 @@ public class Player : MonoBehaviour
         currentPlayerData.power = currentPower;  // Сохраняем значение силы в ScriptableObject
 
         PlayerPrefs.SetInt(BaseDamageKey, newAttack);
-        SaveCharacterStats();  // Сохраняем все характеристики, включая power
-        Debug.Log($"Обновлено значение атаки: {newAttack} (Сила: {currentPower})");
+        SaveCharacterStats();  // Сохраняем все характеристики, включая power       
     }
 
     public void UpdateMoveSpeed(int currentDextery)
@@ -642,8 +571,7 @@ public class Player : MonoBehaviour
         currentPlayerData.dexterity = currentDextery;  // Сохраняем значение ловкости в ScriptableObject
 
         PlayerPrefs.SetFloat(BaseMoveSpeed, newSpeed);
-        SaveCharacterStats();  // Сохраняем все характеристики, включая dexterity
-        Debug.Log($"Обновлена скорость: {newSpeed} (Ловкость: {currentDextery})");
+        SaveCharacterStats();  // Сохраняем все характеристики, включая dexterity       
     }
 
     public void UpdateDefense(int additionalDefenseUnits)
@@ -654,7 +582,6 @@ public class Player : MonoBehaviour
 
         PlayerPrefs.SetInt(BaseDefense, newDevense);
         SaveCharacterStats();  // Сохраняем все характеристики, включая defence
-        Debug.Log($"Обновлена защита: {newDevense} )");
     }
 
     public void UpdateIntellect(int additionalIntellect)
@@ -664,7 +591,6 @@ public class Player : MonoBehaviour
 
         PlayerPrefs.SetInt(BaseIntellectKey, newIntellect);
         SaveCharacterStats();  // Сохраняем все характеристики, включая intellect
-        Debug.Log($"Обновлен интеллект: {newIntellect} )");
     }
     #endregion
 
@@ -687,7 +613,6 @@ public class Player : MonoBehaviour
         PlayerPrefs.SetInt(BaseIntellectKey, currentPlayerData.intellect);
         
         PlayerPrefs.Save();
-        Debug.Log("Все характеристики персонажа сохранены в PlayerPrefs");
     }
     
     // Новый метод для загрузки базовых характеристик персонажа из PlayerPrefs
@@ -706,13 +631,11 @@ public class Player : MonoBehaviour
             currentPlayerData.stamina = PlayerPrefs.GetInt("PlayerStamina", currentPlayerData.stamina);
             currentPlayerData.defence = PlayerPrefs.GetInt("PlayerDefence", currentPlayerData.defence);
             currentPlayerData.intellect = PlayerPrefs.GetInt("PlayerIntellect", currentPlayerData.intellect);
-            Debug.Log("Загружены сохраненные данные из PlayerPrefs.");
         }
         else
         {
             // Если данных нет, сохраняем исходные значения из ScriptableObject в PlayerPrefs
             SaveCharacterStats();
-            Debug.Log("Исходные значения характеристик из ScriptableObject сохранены в PlayerPrefs");
         }
         
         // Пересчитываем производные характеристики на основе базовых
@@ -733,11 +656,6 @@ public class Player : MonoBehaviour
         maxHealth = currentPlayerData.health;
         currentHealth = maxHealth;
         UpdateHealthDisplay();
-        
-        Debug.Log($"Загружены характеристики: Сила {currentPlayerData.power}, Ловкость {currentPlayerData.dexterity}, " +
-                  $"Выносливость {currentPlayerData.stamina}, Защита {currentPlayerData.defence}, Интеллект {currentPlayerData.intellect}");
-        Debug.Log($"Пересчитаны производные: Атака {currentPlayerData.attack}, Здоровье {currentPlayerData.health}, " +
-                  $"Скорость {currentPlayerData.moveSpeed}, Защита {currentPlayerData.defense}");
     }
 
     #region DieAndRespawn
@@ -746,7 +664,6 @@ public class Player : MonoBehaviour
         while (true)
         {
             yield return new WaitForSeconds(30f);
-            Debug.Log($"Создание снапшота в {Time.time}");
             RecordSnapshot();            
         }
     }
@@ -767,11 +684,9 @@ public class Player : MonoBehaviour
             snapshot.expForLevelUp = expBar.GetExpForLevelUp();
         }
         saveSystem.RecordSnapshot(snapshot);
-        Debug.Log($"Создан снапшот: позиция {snapshot.position}, здоровье {snapshot.currentHealth}");
     }
     private IEnumerator DelayedRestore()
     {
-        // ��� �������, ����� ��� ������� ������ ������������������
         yield return new WaitForSeconds(0.1f);
 
         if (PlayerPrefs.GetInt("ContinueGame", 0) == 1)
@@ -803,12 +718,10 @@ public class Player : MonoBehaviour
         PlayerSnapshot snapshot = saveSystem.GetSnapshotForRewind(30f);
         if (snapshot != null)
         {
-            Debug.Log($"Найден снапшот для отката. Позиция: {snapshot.position}, Здоровье: {snapshot.currentHealth}");
             StartCoroutine(Respawn(snapshot));
         }
         else
         {
-            Debug.LogWarning("Не найден снапшот для отката!");
             // Если снапшота нет, восстанавливаем максимальное здоровье
             currentHealth = maxHealth;
             UpdateHealthDisplay();
@@ -837,25 +750,20 @@ public class Player : MonoBehaviour
             UpdateHealthDisplay();
         }
 
-        // Штрафной опыт: теряется 10% от накопленного опыта,
-        // но текущий опыт не может упасть ниже 0 для текущего уровня
+        // Штрафной опыт: теряется 10% от накопленного опыта, но текущий опыт не может упасть ниже 0 для текущего уровня
         if (expBar != null)
         {
             int xpLoss = Mathf.CeilToInt(snapshot.currentExp * 0.1f);
             
-            // Ограничиваем потерю опыта так, чтобы он не упал ниже 0 для текущего уровня
-            // 0 для текущего уровня - это значит, что опыт = 0, но уровень не меняется
+            // Ограничиваем потерю опыта так, чтобы он не упал ниже 0 для текущего уровня 0 для текущего уровня - это значит, что опыт = 0, но уровень не меняется
             int minExp = 0; // Минимальный опыт для текущего уровня
             int newExp = Mathf.Max(minExp, snapshot.currentExp - xpLoss);
-            
-            Debug.Log($"Потеря опыта при смерти: -{xpLoss} XP. Новый опыт: {newExp}/{snapshot.expForLevelUp}");
-            
+           
             // Устанавливаем опыт, сохраняя текущий уровень, стат-поинты и порог опыта
             expBar.SetExperience(newExp, snapshot.currentLevel, snapshot.statPoints, snapshot.expForLevelUp);
         }
 
         isInCombat = false;
-        Debug.Log($"Восстановлен игрок из снапшота с потерей 10% опыта. Здоровье: {currentHealth}/{maxHealth}");
     }
 
     #endregion
@@ -882,28 +790,19 @@ public class Player : MonoBehaviour
         {
             Enemy targetEnemy = selector.CurrentTarget;
             int playerIntellect = currentPlayerData.intellect;
-            // ������� ������: ��������� 10 ���� 20% �����, �������:
             float chancePercent = (playerIntellect / 50.0f) * 100f;
-            int roll = Random.Range(0, 101); // ���������� ����� �� 0 �� 100 ������������
-
-            Debug.Log($"����: {chancePercent}%, ������: {roll}");
+            int roll = Random.Range(0, 101); 
 
             if (roll <= chancePercent)
             {
-                float duration = playerIntellect; // ������������ ����������, ��������, ����� ����������
+                float duration = playerIntellect;
                 targetEnemy.Tame(duration);
                 OnEnemyTame?.Invoke(1);
-                Debug.Log($"�������� ������ {targetEnemy.name} �� {duration} ������.");
             }
             else
             {
                 OnEnemyTame?.Invoke(0);
-                Debug.Log("�� ������� ��������� �������.");
             }
-        }
-        else
-        {
-            Debug.Log("��� ������� ������ ��� ���� ��� ����������.");
         }
     }
 
@@ -937,7 +836,6 @@ public class Player : MonoBehaviour
         if (companions.Contains(companion))
         {
             companions.Remove(companion);
-            Debug.Log($"Компаньон {companion.GetNPCName()} удален из группы игрока");
         }
     }
 

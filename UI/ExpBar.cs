@@ -6,7 +6,7 @@ public class ExpBar : MonoBehaviour
 {
     public Image expImage;
     public Text expText;
-    public Text lvlText; // Текст для отображения уровня
+    //public Text lvlText; // Текст для отображения уровня
 
     [Header("Level Up Effects")]
     [SerializeField] private GameObject levelUpVFXPrefab; // Префаб эффекта повышения уровня
@@ -35,15 +35,11 @@ public class ExpBar : MonoBehaviour
 
         // Убеждаемся, что эффект Buff отключен при старте игры
         DisableBuffEffectAtStart();
-
-        Debug.Log($"Start: Level {currentLevel}, Exp {currentExp}/{expForLevelUp}, StatPoints {statPoints}");
     }
 
     private void OnEnable()
     {
-        Debug.Log("ExpBar: OnEnable - Подписка на события");
         Enemy.OnEnemyDeath += AddExperience;
-        Debug.Log("ExpBar: Подписка на OnEnemyDeath завершена");
 
         // Подписка на события от менеджеров квестов
         SubscribeToQuestManagers();
@@ -51,9 +47,7 @@ public class ExpBar : MonoBehaviour
 
     private void OnDisable()
     {
-        Debug.Log("ExpBar: OnDisable - Отписка от событий");
         Enemy.OnEnemyDeath -= AddExperience;
-        Debug.Log("ExpBar: Отписка от OnEnemyDeath завершена");
 
         // Отписка от событий
         UnsubscribeFromQuestManagers();
@@ -110,11 +104,6 @@ public class ExpBar : MonoBehaviour
         if (QuestManager.Instance != null)
         {
             QuestManager.Instance.OnQuestCompleted += HandleQuestCompleted;
-            Debug.Log("ExpBar: Успешная подписка на события QuestManager");
-        }
-        else
-        {
-            Debug.LogWarning("ExpBar: Не удалось найти QuestManager.Instance после нескольких попыток");
         }
     }
 
@@ -131,11 +120,6 @@ public class ExpBar : MonoBehaviour
         if (QuestHunterManager.Instance != null)
         {
             QuestHunterManager.Instance.OnKillQuestCompleted += HandleKillQuestCompleted;
-            Debug.Log("ExpBar: Успешная подписка на события QuestHunterManager");
-        }
-        else
-        {
-            Debug.LogWarning("ExpBar: Не удалось найти QuestHunterManager.Instance после нескольких попыток");
         }
     }
 
@@ -146,7 +130,6 @@ public class ExpBar : MonoBehaviour
         {
             int reward = quest.reward;
             AddExperienceInternal(reward);
-            Debug.Log($"Получена награда за квест '{quest.questName}': +{reward} опыта. Новый опыт: {currentExp}/{expForLevelUp}");
         }
     }
 
@@ -157,16 +140,13 @@ public class ExpBar : MonoBehaviour
         {
             int reward = quest.reward;
             AddExperienceInternal(reward);
-            Debug.Log($"Получена награда за квест охоты '{quest.questName}': +{reward} опыта. Новый опыт: {currentExp}/{expForLevelUp}");
-        }
+       }
     }
 
     // Метод вызывается при получении опыта за убийство врага
     private void AddExperience(int exp)
     {
-        Debug.Log($"ExpBar: Получено событие OnEnemyDeath с опытом {exp}");
         AddExperienceInternal(exp);
-        Debug.Log($"ExpBar: Опыт добавлен. Текущий опыт: {currentExp}/{expForLevelUp}");
     }
 
     // Общий метод для добавления опыта
@@ -188,7 +168,6 @@ public class ExpBar : MonoBehaviour
     public void AddExperienceManually(int exp, string source = "неизвестно")
     {
         AddExperienceInternal(exp);
-        Debug.Log($"Получен опыт из источника '{source}': +{exp} опыта. Новый опыт: {currentExp}/{expForLevelUp}");
     }
 
     private void LevelUp()
@@ -203,12 +182,10 @@ public class ExpBar : MonoBehaviour
         if (currentLevel % 5 == 0)
         {
             statPoints += 5;
-            Debug.Log($"LevelUp: Новый уровень {currentLevel} (кратен 5). +5 очков. Всего очков: {statPoints}");
         }
         else
         {
             statPoints += defaultStatPoints;
-            Debug.Log($"LevelUp: Новый уровень {currentLevel}. +{defaultStatPoints} очко. Всего очков: {statPoints}");
         }
 
         // Увеличиваем требуемый опыт для следующего уровня по разной формуле для разных диапазонов уровней
@@ -233,7 +210,6 @@ public class ExpBar : MonoBehaviour
             expForLevelUp = Mathf.CeilToInt(expForLevelUp * 1.07f); // Медленнее, но все равно растет с уменьшением на 15%
         }
 
-        Debug.Log($"Новый порог опыта: {expForLevelUp}");
         SaveExperience(); // Сохраняем изменения после повышения уровня
     }
 
@@ -260,9 +236,7 @@ public class ExpBar : MonoBehaviour
                 if (particleSystem != null)
                 {
                     // Играем систему частиц
-                    particleSystem.Play();
-                    
-                    Debug.Log($"Проигран эффект повышения уровня на игроке: {currentLevel}");
+                    particleSystem.Play();                    
                 }
                 
                 // Запускаем корутину для деактивации объекта через 2 секунды, независимо от наличия ParticleSystem
@@ -277,18 +251,10 @@ public class ExpBar : MonoBehaviour
                 
                 // Уничтожаем эффект через 2 секунды
                 Destroy(vfxInstance, 2f);
-                
-                Debug.Log($"Создан временный эффект повышения уровня (префаб): {currentLevel}");
-            }
-            else
-            {
-                Debug.LogWarning("Не найден объект Buff у игрока и не задан префаб эффекта.");
             }
         }
         else
-        {
-            Debug.LogWarning("Не удалось найти игрока для проигрывания эффекта повышения уровня");
-            
+        {            
             // Если игрок не найден и есть префаб, создаем эффект в позиции ExpBar (UI)
             if (levelUpVFXPrefab != null)
             {
@@ -306,7 +272,6 @@ public class ExpBar : MonoBehaviour
         if (buffObject != null)
         {
             buffObject.SetActive(false);
-            Debug.Log("Эффект Buff деактивирован через " + delay + " секунд");
         }
     }
 
@@ -318,8 +283,8 @@ public class ExpBar : MonoBehaviour
         if (expText != null)
             expText.text = currentExp + " / " + expForLevelUp;
 
-        if (lvlText != null)
-            lvlText.text = currentLevel.ToString();
+       /* if (lvlText != null)
+            lvlText.text = currentLevel.ToString();*/
     }
 
     private void SaveExperience()
@@ -337,7 +302,6 @@ public class ExpBar : MonoBehaviour
         currentLevel = PlayerPrefs.GetInt(LvlKey, 1);
         statPoints = PlayerPrefs.GetInt(StatPointKey, 0);
         expForLevelUp = PlayerPrefs.GetInt(ExpForLevelUpKey, expForLevelUp);
-        Debug.Log($"LoadExperience: Уровень {currentLevel}, Опыт {currentExp}, СтатПоинты {statPoints}, Порог опыта {expForLevelUp}");
     }
 
     // Метод для восстановления состояния опыта
@@ -354,7 +318,6 @@ public class ExpBar : MonoBehaviour
     public void UpdateStatPoints(int newStatPoints)
     {
         statPoints = newStatPoints;
-        Debug.Log($"ExpBar: Обновлено количество стат-поинтов: {statPoints}");
         SaveExperience(); // Сохраняем изменения
     }
 
@@ -368,7 +331,6 @@ public class ExpBar : MonoBehaviour
             if (buffTransform != null)
             {
                 buffTransform.gameObject.SetActive(false);
-                Debug.Log("Эффект Buff деактивирован при старте игры");
             }
         }
     }

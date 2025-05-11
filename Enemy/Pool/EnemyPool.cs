@@ -3,9 +3,9 @@ using UnityEngine;
 
 public class EnemyPool : MonoBehaviour
 {
-    [SerializeField] private List<Enemy> enemyPrefabs; // ������� ������
-    [SerializeField] private int initialPoolSize = 10; // ������ ���� ��� ������� ����
-    [SerializeField] private Transform enemiesParent;
+    [SerializeField] private List<Enemy> enemyPrefabs; // Список префабов врагов
+    [SerializeField] private int initialPoolSize = 10;   // Начальный размер пула для каждого типа врага
+    [SerializeField] private Transform enemiesParent;    // Родительский объект для созданных врагов
 
     private Dictionary<Enemy, Queue<Enemy>> enemyPools = new Dictionary<Enemy, Queue<Enemy>>();
 
@@ -28,38 +28,26 @@ public class EnemyPool : MonoBehaviour
         }
     }
 
-    /* private Enemy InstantiateEnemy(Enemy prefab)
-     {
-         Enemy enemy = Instantiate(prefab, enemiesParent);
-         enemy.OriginalPrefab = prefab;
-         enemy.gameObject.SetActive(false);
-         return enemy;
-     }*/
     private Enemy InstantiateEnemy(Enemy prefab)
     {
         Enemy enemy = Instantiate(prefab, enemiesParent);
         enemy.OriginalPrefab = prefab;
         enemy.gameObject.SetActive(false);
-        // ������� "(Clone)" �� �����
         enemy.name = enemy.name.Replace("(Clone)", "").Trim();
-        //enemy.name = prefab.name;
 
         return enemy;
     }
-
 
     public Enemy GetEnemy(Enemy enemyPrefab)
     {
         if (enemyPrefab == null)
         {
-            Debug.LogError("Попытка получить врага из null префаба!");
             return null;
         }
 
-        // Если префаба нет в пуле, создаем для него новый пул
+        // Если пула для данного префаба ещё нет, создаём его
         if (!enemyPools.ContainsKey(enemyPrefab))
         {
-            Debug.Log($"Создаем новый пул для префаба {enemyPrefab.name}");
             Queue<Enemy> newPool = new Queue<Enemy>();
             for (int i = 0; i < initialPoolSize; i++)
             {
@@ -74,17 +62,14 @@ public class EnemyPool : MonoBehaviour
             if (pool.Count > 0)
             {
                 Enemy enemy = pool.Dequeue();
-                Debug.Log($"Извлечение врага {enemy.name} из пула. Осталось в пуле: {pool.Count}");
                 return enemy;
             }
             else
             {
-                Debug.Log($"Создание нового врага {enemyPrefab.name}, так как пул пуст");
                 return InstantiateEnemy(enemyPrefab);
             }
         }
 
-        Debug.LogError($"Не удалось создать или получить пул для префаба {enemyPrefab.name}!");
         return null;
     }
 
@@ -92,50 +77,42 @@ public class EnemyPool : MonoBehaviour
     {
         if (enemy == null)
         {
-            Debug.LogError("Попытка вернуть null врага в пул");
             return;
         }
 
-        Debug.Log($"Возврат врага {enemy.name} в пул");
-        
         Enemy prefab = enemy.OriginalPrefab;
         if (prefab == null)
         {
-            Debug.LogError($"У врага {enemy.name} не задан OriginalPrefab!");
             return;
         }
 
-        // Если пула для этого префаба еще нет, создаем его
+        // Если пула для этого префаба ещё нет, создаём его
         if (!enemyPools.ContainsKey(prefab))
         {
-            Debug.Log($"Создаем новый пул для префаба {prefab.name}");
             enemyPools[prefab] = new Queue<Enemy>();
         }
 
         Queue<Enemy> pool = enemyPools[prefab];
         if (pool.Contains(enemy))
         {
-            Debug.LogWarning($"Враг {enemy.name} уже находится в пуле");
             return;
         }
 
         // Сбрасываем состояние врага перед возвратом в пул
         ResetEnemyState(enemy);
-        
+
         enemy.gameObject.SetActive(false);
         pool.Enqueue(enemy);
-        
-        Debug.Log($"Враг {enemy.name} успешно возвращен в пул. Текущий размер пула: {pool.Count}");
     }
 
     private void ResetEnemyState(Enemy enemy)
     {
         if (enemy == null) return;
 
-        // Сбрасываем все необходимые параметры врага
+        // Сбрасываем позицию и поворот
         enemy.transform.position = Vector3.zero;
         enemy.transform.rotation = Quaternion.identity;
-        
+
         // Сбрасываем здоровье
         var healthSystem = enemy.GetComponent<HealthSystem>();
         if (healthSystem != null)
@@ -143,7 +120,7 @@ public class EnemyPool : MonoBehaviour
             healthSystem.SetCurrentHealth(healthSystem.GetMaxHealth());
         }
 
-        // Сбрасываем другие компоненты, если необходимо
+        // Сбрасываем физические параметры
         var rb = enemy.GetComponent<Rigidbody>();
         if (rb != null)
         {
